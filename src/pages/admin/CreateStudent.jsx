@@ -58,10 +58,24 @@ function CreateStudent() {
 
   const fetchBatches = async () => {
     try {
+      // Use the proper batch endpoint that returns Batch model data
       const response = await api.get('/batches');
       setBatches(response.data);
+      console.log('✅ Fetched batches from /batches:', response.data);
     } catch (error) {
-      console.error('Error fetching batches:', error);
+      console.error('Error fetching batches from /batches:', error);
+      // Fallback: try the admin endpoints
+      try {
+        const fallbackResponse = await api.get('/admin/batches');
+        const batchObjects = fallbackResponse.data.map(batchName => ({
+          _id: batchName,
+          name: batchName
+        }));
+        setBatches(batchObjects);
+        console.log('✅ Fetched batches from /admin/batches fallback:', batchObjects);
+      } catch (fallbackError) {
+        console.error('Error fetching batches from fallback:', fallbackError);
+      }
     }
   };
 
@@ -310,7 +324,9 @@ function CreateStudent() {
                 >
                   <option value="">-- Select Batch --</option>
                   {batches.map(batch => (
-                    <option key={batch._id} value={batch.name}>{batch.name}</option>
+                    <option key={batch._id} value={batch.name}>
+                      {batch.name} {batch.year && `(${batch.year})`} {batch.department && `- ${batch.department}`}
+                    </option>
                   ))}
                 </select>
                 <p className="mt-1.5 text-xs text-gray-500">
@@ -320,7 +336,7 @@ function CreateStudent() {
             </div>
 
             {/* Info Box */}
-            <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg p-5">
+            <div className="mt-8 bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-500 rounded-lg p-5">
               <div className="flex items-start">
                 <div className="bg-blue-500 p-2 rounded-lg">
                   <UserPlus className="w-5 h-5 text-white" />

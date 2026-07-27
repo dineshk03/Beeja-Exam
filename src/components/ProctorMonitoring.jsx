@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, AlertTriangle } from 'lucide-react';
+import { Camera, AlertTriangle, Eye } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 import { useAuthStore } from '../store/authStore';
 
 const ProctorMonitoring = ({ sessionId, isActive }) => {
@@ -123,7 +124,7 @@ const ProctorMonitoring = ({ sessionId, isActive }) => {
   const logEvent = async (eventType, severity, description) => {
     try {
       await axios.post(
-        `http://localhost:5000/api/sessions/${sessionId}/proctor-log`,
+        `${API_BASE_URL}/sessions/${sessionId}/proctor-log`,
         {
           eventType,
           severity,

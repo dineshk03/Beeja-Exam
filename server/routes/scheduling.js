@@ -1,7 +1,9 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Schedule from '../models/Schedule.js';
 import Exam from '../models/Exam.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
+import { checkPermission, requireAnyAdminPermission } from '../middleware/permissions.js';
 
 const router = express.Router();
 
@@ -19,14 +21,25 @@ router.get('/schedules/debug', authenticateToken, async (req, res) => {
         exam: schedule.exam?.title,
         date: schedule.scheduledDate,
         status: schedule.status,
-        assignedStudents: schedule.exam?.assignedStudents?.length || 0
+        assignedStudents: schedule.exam?.assignedStudents?.length || 0,
+        allowedBatches: schedule.allowedBatches?.length || 0,
+        registeredCandidates: schedule.registeredCandidates?.length || 0
       });
     });
+    
+    // Also check user's batch
+    const User = (await import('../models/User.js')).default;
+    const user = await User.findById(req.user.id).select('batch');
     
     res.json({
       total: allSchedules.length,
       schedules: allSchedules,
-      currentUser: req.user.id
+      currentUser: {
+        id: req.user.id,
+        batch: user?.batch || 'No batch assigned'
+      },
+      currentTime: new Date().toISOString(),
+      currentDate: new Date().toISOString().split('T')[0]
     });
   } catch (error) {
     console.error('Debug error:', error);
@@ -35,7 +48,7 @@ router.get('/schedules/debug', authenticateToken, async (req, res) => {
 });
 
 // Get all schedules (Admin)
-router.get('/admin/schedules', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/schedules', authenticateToken, requireAnyAdminPermission, checkPermission('scheduling', 'read'), async (req, res) => {
   try {
     const { status, examId } = req.query;
     const filter = {};
@@ -56,7 +69,7 @@ router.get('/admin/schedules', authenticateToken, requireAdmin, async (req, res)
 });
 
 // Create schedule (Admin)
-router.post('/admin/schedules', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/admin/schedules', authenticateToken, requireAnyAdminPermission, checkPermission('scheduling', 'create'), async (req, res) => {
   try {
     const {
       examId,
@@ -65,10 +78,18 @@ router.post('/admin/schedules', authenticateToken, requireAdmin, async (req, res
       endTime,
       maxCandidates,
       venue,
+      allowedBatches,
       proctorSettings,
     } = req.body;
 
-    console.log('Creating schedule with data:', { examId, scheduledDate, startTime, endTime, userId: req.user.id });
+    console.log('Creating schedule with data:', { 
+      examId, 
+      scheduledDate, 
+      startTime, 
+      endTime, 
+      allowedBatches,
+      userId: req.user.id 
+    });
 
     // Verify exam exists
     const exam = await Exam.findById(examId);
@@ -83,6 +104,7 @@ router.post('/admin/schedules', authenticateToken, requireAdmin, async (req, res
       endTime,
       maxCandidates: maxCandidates || 50,
       venue: venue || 'Online',
+      allowedBatches: allowedBatches || [],
       proctorSettings: proctorSettings || {
         webcamRequired: true,
         screenRecording: false,
@@ -103,7 +125,7 @@ router.post('/admin/schedules', authenticateToken, requireAdmin, async (req, res
 });
 
 // Update schedule (Admin)
-router.put('/admin/schedules/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.put('/admin/schedules/:id', authenticateToken, requireAnyAdminPermission, checkPermission('scheduling', 'update'), async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -125,7 +147,7 @@ router.put('/admin/schedules/:id', authenticateToken, requireAdmin, async (req, 
 });
 
 // Delete schedule (Admin)
-router.delete('/admin/schedules/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.delete('/admin/schedules/:id', authenticateToken, requireAnyAdminPermission, checkPermission('scheduling', 'delete'), async (req, res) => {
   try {
     const { id } = req.params;
     const schedule = await Schedule.findByIdAndDelete(id);
@@ -158,31 +180,166 @@ router.get('/schedules', authenticateToken, async (req, res) => {
 
     console.log('Total schedules found:', schedules.length);
 
-    // Filter schedules where student is assigned to the exam
-    const availableSchedules = schedules.filter(schedule => {
+    // Filter schedules using the same access control logic as exam listing
+    const availableSchedules = [];
+    
+    for (const schedule of schedules) {
       if (!schedule.exam) {
         console.log('Schedule has no exam:', schedule._id);
-        return false;
+        continue;
       }
       
-      const isAssigned = schedule.exam.assignedStudents.length === 0 || 
-                        schedule.exam.assignedStudents.some(id => id.toString() === req.user.id);
+      // Use the same access control logic as the main exam listing
+      const userObjectId = new mongoose.Types.ObjectId(req.user.id);
+      
+      // Check if student has access to this schedule
+      const hasAccess = await checkStudentScheduleAccess(schedule, userObjectId, req.user.id);
       
       console.log(`Schedule ${schedule._id} for exam "${schedule.exam.title}":`, {
-        assignedStudents: schedule.exam.assignedStudents.length,
-        isOpenToAll: schedule.exam.assignedStudents.length === 0,
-        isStudentAssigned: schedule.exam.assignedStudents.some(id => id.toString() === req.user.id),
-        result: isAssigned
+        assignedStudents: schedule.exam.assignedStudents?.length || 0,
+        registeredCandidates: schedule.registeredCandidates?.length || 0,
+        allowedBatches: schedule.allowedBatches?.length || 0,
+        hasAccess
       });
       
-      return isAssigned;
-    });
+      if (hasAccess) {
+        availableSchedules.push(schedule);
+      }
+    }
+    
+    // Helper function to check if student has access to a schedule (same as exams.js)
+    async function checkStudentScheduleAccess(schedule, userObjectId, userId) {
+      // 1. Check if student is explicitly registered in the schedule
+      if (schedule.registeredCandidates && schedule.registeredCandidates.some(id => id.toString() === userId)) {
+        return true;
+      }
+      
+      // 2. Check if student is assigned to the exam
+      if (schedule.exam && schedule.exam.assignedStudents && schedule.exam.assignedStudents.some(id => id.toString() === userId)) {
+        return true;
+      }
+      
+      // 3. Check batch-based access (schedule level)
+      if (schedule.allowedBatches && schedule.allowedBatches.length > 0) {
+        try {
+          const User = (await import('../models/User.js')).default;
+          const user = await User.findById(userId).select('batch');
+          
+          if (user && user.batch && schedule.allowedBatches.includes(user.batch)) {
+            return true;
+          }
+        } catch (error) {
+          console.log('Error checking batch access:', error.message);
+        }
+      }
+      
+      // 4. Check batch-based access (exam level)
+      if (schedule.exam && schedule.exam.batch) {
+        try {
+          const User = (await import('../models/User.js')).default;
+          const user = await User.findById(userId).select('batch');
+          
+          if (user && user.batch && user.batch === schedule.exam.batch) {
+            return true;
+          }
+        } catch (error) {
+          console.log('Error checking exam batch access:', error.message);
+        }
+      }
+      
+      // 5. If exam has no restrictions, allow access (open exam)
+      const hasNoAssignments = !schedule.exam.assignedStudents || schedule.exam.assignedStudents.length === 0;
+      const hasNoRegistrations = !schedule.registeredCandidates || schedule.registeredCandidates.length === 0;
+      const hasNoBatchRestrictions = (!schedule.allowedBatches || schedule.allowedBatches.length === 0) && 
+                                    (!schedule.exam.batch || schedule.exam.batch === '');
+      
+      if (hasNoAssignments && hasNoRegistrations && hasNoBatchRestrictions) {
+        return true;
+      }
+      
+      return false;
+    }
 
     console.log('Available schedules for student:', availableSchedules.length);
     res.json(availableSchedules);
   } catch (error) {
     console.error('Error fetching schedules:', error);
     res.status(500).json({ message: 'Error fetching schedules', error: error.message });
+  }
+});
+
+// Quick fix: Update schedule status (Admin)
+router.patch('/admin/schedules/:id/status', authenticateToken, requireAnyAdminPermission, checkPermission('scheduling', 'update'), async (req, res) => {
+  try {
+    const { status } = req.body;
+    const validStatuses = ['scheduled', 'ongoing', 'completed', 'cancelled'];
+    
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+    
+    const schedule = await Schedule.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    ).populate('exam', 'title');
+    
+    if (!schedule) {
+      return res.status(404).json({ message: 'Schedule not found' });
+    }
+    
+    console.log(`Schedule ${schedule._id} status updated to: ${status}`);
+    res.json({ message: 'Status updated successfully', schedule });
+  } catch (error) {
+    console.error('Error updating schedule status:', error);
+    res.status(500).json({ message: 'Error updating status', error: error.message });
+  }
+});
+
+// Auto-update expired schedules (Admin utility)
+router.post('/admin/schedules/update-expired', authenticateToken, requireAnyAdminPermission, checkPermission('scheduling', 'update'), async (req, res) => {
+  try {
+    const now = new Date();
+    const currentDate = now.toISOString().split('T')[0];
+    const currentTime = now.toTimeString().slice(0, 5);
+    
+    // Find schedules that have passed their end time + 5 minute grace period
+    const expiredSchedules = await Schedule.find({
+      status: 'scheduled',
+      scheduledDate: { $lte: new Date(currentDate) }
+    });
+    
+    let updatedCount = 0;
+    
+    for (const schedule of expiredSchedules) {
+      const scheduleDate = schedule.scheduledDate.toISOString().split('T')[0];
+      
+      // Check if schedule is from today and has passed end time (no grace period)
+      if (scheduleDate === currentDate) {
+        const [endHour, endMinute] = schedule.endTime.split(':').map(Number);
+        const endMinutes = endHour * 60 + endMinute; // No grace period
+        const currentMinutes = parseInt(currentTime.split(':')[0]) * 60 + parseInt(currentTime.split(':')[1]);
+        
+        if (currentMinutes > endMinutes) {
+          await Schedule.findByIdAndUpdate(schedule._id, { status: 'completed' });
+          updatedCount++;
+          console.log(`Auto-updated schedule ${schedule._id} to completed`);
+        }
+      } else if (scheduleDate < currentDate) {
+        // Past dates should definitely be completed
+        await Schedule.findByIdAndUpdate(schedule._id, { status: 'completed' });
+        updatedCount++;
+        console.log(`Auto-updated past schedule ${schedule._id} to completed`);
+      }
+    }
+    
+    res.json({ 
+      message: `Updated ${updatedCount} expired schedules to completed status`,
+      updatedCount 
+    });
+  } catch (error) {
+    console.error('Error updating expired schedules:', error);
+    res.status(500).json({ message: 'Error updating expired schedules', error: error.message });
   }
 });
 

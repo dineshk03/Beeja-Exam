@@ -1,4 +1,4 @@
-# TCS iON Exam System - AWS Deployment Script (PowerShell)
+# Beeja Exam Management - AWS Deployment Script (PowerShell)
 param(
     [Parameter(Mandatory=$false)]
     [ValidateSet("infra", "app", "all")]
@@ -186,7 +186,7 @@ function Get-AppUrl {
 }
 
 # Main execution
-Write-Info "Starting deployment of TCS iON Exam System to AWS..."
+Write-Info "Starting deployment of Beeja Exam Management to AWS..."
 
 Test-AWSCli
 Test-Docker

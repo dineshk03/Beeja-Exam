@@ -181,35 +181,38 @@ const Analytics = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-3 rounded-lg">
-              <BarChart3 className="w-8 h-8 text-white" />
-            </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
-              <p className="text-gray-600 mt-1">Comprehensive exam and student performance analytics</p>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1">
+                <span className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center">
+                  <BarChart3 className="w-5 h-5 text-purple-600" />
+                </span>
+                Reports &amp; Analytics
+              </h1>
+              <p className="text-gray-500 text-sm ml-11">Comprehensive exam and student performance analytics</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => fetchAnalytics()}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 hover:scale-105"
+              className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all text-sm font-medium"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>Refresh</span>
+              <span className="hidden sm:inline">Refresh</span>
             </button>
             <button
               onClick={exportToCSV}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg transition-all duration-200 hover:scale-105"
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-md shadow-emerald-500/20 transition-all text-sm font-semibold"
             >
               <FileSpreadsheet className="w-4 h-4" />
-              <span>Export CSV</span>
+              Export CSV
             </button>
             <button
               onClick={exportToJSON}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-lg transition-all duration-200 hover:scale-105"
+              className="flex items-center gap-2 px-4 py-2.5 text-white rounded-xl transition-all shadow-md shadow-blue-500/20 text-sm font-semibold"
+              style={{ background: 'linear-gradient(135deg, #2563eb, #0891b2)' }}
             >
               <FileDown className="w-4 h-4" />
-              <span>Export JSON</span>
+              Export JSON
             </button>
           </div>
         </div>
@@ -265,7 +268,7 @@ const Analytics = () => {
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer">
+        <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-6 rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-blue-100 font-medium">Total Exams</p>
@@ -291,7 +294,7 @@ const Analytics = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-6 rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer">
+        <div className="bg-gradient-to-br from-purple-500 to-cyan-600 p-6 rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-purple-100 font-medium">Total Sessions</p>
@@ -522,7 +525,7 @@ const Analytics = () => {
                     Performance Overview
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-xl text-white">
+                    <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-4 rounded-xl text-white">
                       <p className="text-sm opacity-90">Exams Taken</p>
                       <p className="text-3xl font-bold mt-1">{selectedStudent.examsTaken}</p>
                     </div>
@@ -530,7 +533,7 @@ const Analytics = () => {
                       <p className="text-sm opacity-90">Avg Score</p>
                       <p className="text-3xl font-bold mt-1">{selectedStudent.avgScore.toFixed(1)}%</p>
                     </div>
-                    <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-4 rounded-xl text-white">
+                    <div className="bg-gradient-to-br from-purple-500 to-cyan-600 p-4 rounded-xl text-white">
                       <p className="text-sm opacity-90">Pass Rate</p>
                       <p className="text-3xl font-bold mt-1">{selectedStudent.passRate.toFixed(1)}%</p>
                     </div>

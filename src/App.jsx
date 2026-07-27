@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
+import './styles/cursor-fix.css';
 
 // Pages
 import Login from './pages/Login';
@@ -21,9 +22,12 @@ import MyResults from './pages/MyResults';
 import ExamResult from './pages/ExamResult';
 import LiveExamResult from './pages/LiveExamResult';
 import PreExamChecks from './pages/PreExamChecks';
+import Certificates from './pages/Certificates';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
+import UserManagement from './pages/admin/UserManagement';
+import CreateUser from './pages/admin/CreateUser';
 import ExamManagement from './pages/admin/ExamManagement';
 import QuestionBank from './pages/admin/QuestionBank';
 import CreateQuestion from './pages/admin/CreateQuestion';
@@ -40,6 +44,8 @@ import Analytics from './pages/admin/Analytics';
 import ReportManagement from './pages/admin/ReportManagement';
 import StudentAnswers from './pages/admin/StudentAnswers';
 import QuestionPapers from './pages/admin/QuestionPapers';
+import CertificateManagement from './pages/admin/CertificateManagement';
+import LiveExamDashboard from './pages/admin/LiveExamDashboard';
 
 function App() {
   const { token, user } = useAuthStore();
@@ -58,11 +64,15 @@ function App() {
         <Route path="/exam/:examId/start" element={token && !isAdmin ? <EnhancedTCSExamInterface /> : <Navigate to="/login" />} />
         <Route path="/exam/result" element={token && !isAdmin ? <Results /> : <Navigate to="/login" />} />
         <Route path="/my-results" element={token && !isAdmin ? <MyResults /> : <Navigate to="/login" />} />
+        <Route path="/my-certificates" element={token && !isAdmin ? <Certificates /> : <Navigate to="/login" />} />
         <Route path="/result/:sessionId" element={token && !isAdmin ? <ExamResult /> : <Navigate to="/login" />} />
         <Route path="/live-result" element={token && !isAdmin ? <LiveExamResult /> : <Navigate to="/login" />} />
         
         {/* Admin Routes */}
         <Route path="/admin" element={token && isAdmin ? <AdminDashboard /> : <Navigate to="/login" />} />
+        <Route path="/admin/users" element={token && isAdmin ? <UserManagement /> : <Navigate to="/login" />} />
+        <Route path="/admin/users/create" element={token && isAdmin ? <CreateUser /> : <Navigate to="/login" />} />
+        <Route path="/admin/users/:id/edit" element={token && isAdmin ? <CreateUser /> : <Navigate to="/login" />} />
         <Route path="/admin/exams" element={token && isAdmin ? <ExamManagement /> : <Navigate to="/login" />} />
         <Route path="/admin/questions" element={token && isAdmin ? <QuestionBank /> : <Navigate to="/login" />} />
         <Route path="/admin/questions/create" element={token && isAdmin ? <CreateQuestion /> : <Navigate to="/login" />} />
@@ -79,6 +89,8 @@ function App() {
         <Route path="/admin/scheduling" element={token && isAdmin ? <Scheduling /> : <Navigate to="/login" />} />
         <Route path="/admin/analytics" element={token && isAdmin ? <Analytics /> : <Navigate to="/login" />} />
         <Route path="/admin/reports" element={token && isAdmin ? <ReportManagement /> : <Navigate to="/login" />} />
+        <Route path="/admin/certificates" element={token && isAdmin ? <CertificateManagement /> : <Navigate to="/login" />} />
+        <Route path="/admin/live" element={token && isAdmin ? <LiveExamDashboard /> : <Navigate to="/login" />} />
         <Route path="/admin/student-answers" element={token && isAdmin ? <StudentAnswers /> : <Navigate to="/login" />} />
         <Route path="/admin/exams/:examId/question-papers" element={token && isAdmin ? <QuestionPapers /> : <Navigate to="/login" />} />
         

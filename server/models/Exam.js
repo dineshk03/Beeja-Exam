@@ -48,10 +48,10 @@ const examSchema = new mongoose.Schema({
     ref: 'Question',
   }],
   
-  // Question Papers support
+  // Question Papers support - ENFORCED
   useQuestionPapers: {
     type: Boolean,
-    default: false
+    default: true  // Force Question Paper usage
   },
   questionPapers: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -162,6 +162,10 @@ const examSchema = new mongoose.Schema({
   allowedAttempts: {
     type: Number,
     default: 3, // Allow 3 attempts by default for development
+  },
+  negativeMarking: {
+    enabled: { type: Boolean, default: false },
+    deductionValue: { type: Number, default: 0.25, min: 0, max: 1 },
   },
 }, {
   timestamps: true,

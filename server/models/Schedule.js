@@ -26,6 +26,9 @@ const scheduleSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   }],
+  allowedBatches: [{
+    type: String, // e.g., "2024-A", "Batch-1", "Morning Batch"
+  }],
   venue: {
     type: String,
     default: 'Online',

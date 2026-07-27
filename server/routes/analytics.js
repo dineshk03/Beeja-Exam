@@ -5,11 +5,12 @@ import User from '../models/User.js';
 import Question from '../models/Question.js';
 import ProctorLog from '../models/ProctorLog.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
+import { checkPermission, requireAnyAdminPermission } from '../middleware/permissions.js';
 
 const router = express.Router();
 
 // Get comprehensive analytics dashboard data
-router.get('/admin/analytics/dashboard', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/analytics/dashboard', authenticateToken, requireAnyAdminPermission, checkPermission('analytics', 'dashboard'), async (req, res) => {
   try {
     // Overall statistics
     const totalExams = await Exam.countDocuments();
@@ -126,7 +127,7 @@ router.get('/admin/analytics/dashboard', authenticateToken, requireAdmin, async 
 });
 
 // Get exam-specific analytics
-router.get('/admin/analytics/exam/:examId', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/analytics/exam/:examId', authenticateToken, requireAnyAdminPermission, checkPermission('analytics', 'read'), async (req, res) => {
   try {
     const { examId } = req.params;
 
@@ -196,7 +197,7 @@ router.get('/admin/analytics/exam/:examId', authenticateToken, requireAdmin, asy
 });
 
 // Get student performance report
-router.get('/admin/analytics/student/:studentId', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/analytics/student/:studentId', authenticateToken, requireAnyAdminPermission, checkPermission('analytics', 'read'), async (req, res) => {
   try {
     const { studentId } = req.params;
 
@@ -273,7 +274,7 @@ router.get('/admin/analytics/student/:studentId', authenticateToken, requireAdmi
 });
 
 // Get time-based analytics
-router.get('/admin/analytics/timeline', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/analytics/timeline', authenticateToken, requireAnyAdminPermission, checkPermission('analytics', 'read'), async (req, res) => {
   try {
     const { startDate, endDate, groupBy = 'day' } = req.query;
 
@@ -329,7 +330,7 @@ router.get('/admin/analytics/timeline', authenticateToken, requireAdmin, async (
 });
 
 // Export analytics report
-router.get('/admin/analytics/export', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/analytics/export', authenticateToken, requireAnyAdminPermission, checkPermission('analytics', 'read'), async (req, res) => {
   try {
     const { format = 'json', examId, studentId } = req.query;
 
@@ -369,7 +370,7 @@ router.get('/admin/analytics/export', authenticateToken, requireAdmin, async (re
 });
 
 // Get student performance data
-router.get('/admin/analytics/student-performance', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/analytics/student-performance', authenticateToken, requireAnyAdminPermission, checkPermission('analytics', 'read'), async (req, res) => {
   try {
     const { startDate, endDate, examId } = req.query;
     
@@ -418,7 +419,7 @@ router.get('/admin/analytics/student-performance', authenticateToken, requireAdm
 });
 
 // Get exam comparison data
-router.get('/admin/analytics/exam-comparison', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/analytics/exam-comparison', authenticateToken, requireAnyAdminPermission, checkPermission('analytics', 'read'), async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     

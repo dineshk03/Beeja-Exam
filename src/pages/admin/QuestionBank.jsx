@@ -212,7 +212,7 @@ function QuestionBank() {
     const colors = {
       'multiple-choice': 'bg-blue-100 text-blue-800',
       'single-choice': 'bg-green-100 text-green-800',
-      'multiple-answer': 'bg-indigo-100 text-indigo-800',
+      'multiple-answer': 'bg-cyan-100 text-indigo-800',
       'short-answer': 'bg-purple-100 text-purple-800',
       'match-following': 'bg-yellow-100 text-yellow-800',
       'code-test': 'bg-red-100 text-red-800',
@@ -235,32 +235,35 @@ function QuestionBank() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <div className="flex items-center space-x-3">
-              <h1 className="text-3xl font-bold text-gray-900">Question Bank</h1>
-              <Sparkles className="w-6 h-6 text-yellow-500 animate-pulse" />
-            </div>
-            <p className="text-gray-600 mt-2">Manage all your exam questions</p>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1">
+              <span className="w-9 h-9 rounded-xl bg-cyan-100 flex items-center justify-center">
+                <FileQuestion className="w-5 h-5 text-cyan-600" />
+              </span>
+              Question Bank
+            </h1>
+            <p className="text-gray-500 text-sm ml-11">Manage all your exam questions</p>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => fetchQuestions()}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors text-sm font-medium"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>Refresh</span>
+              <span className="hidden sm:inline">Refresh</span>
             </button>
             <button
               onClick={() => navigate('/admin/questions/bulk-import')}
-              className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all hover:scale-105 shadow-md"
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-500/20 text-sm font-semibold"
             >
-              <Upload className="w-5 h-5" />
-              <span>Bulk Import</span>
+              <Upload className="w-4 h-4" />
+              Bulk Import
             </button>
             <button
               onClick={() => navigate('/admin/questions/create')}
-              className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all hover:scale-105 shadow-md"
+              className="flex items-center gap-2 px-4 py-2.5 text-white rounded-xl transition-all shadow-md shadow-blue-500/20 text-sm font-semibold"
+              style={{ background: 'linear-gradient(135deg, #2563eb, #0891b2)' }}
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               <span>Add Question</span>
             </button>
           </div>
@@ -268,7 +271,7 @@ function QuestionBank() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white hover:scale-105 transition-transform cursor-pointer">
+          <div className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-lg p-6 text-white hover:scale-105 transition-transform cursor-pointer">
             <div className="flex items-center justify-between mb-2">
               <FileQuestion className="w-8 h-8 opacity-80" />
               <span className="text-2xl font-bold">{stats.total}</span>

@@ -81,10 +81,20 @@ function ExamManagement() {
 
   const fetchBatches = async () => {
     try {
-      const response = await api.get('/admin/batches');
-      setBatches(response.data);
+      const response = await api.get('/batches');
+      // Extract batch names for assignment
+      const batchNames = response.data.map(batch => batch.name);
+      setBatches(batchNames);
+      console.log('✅ Fetched batches for exam management:', batchNames);
     } catch (error) {
-      console.error('Error fetching batches:', error);
+      console.error('Error fetching batches from /batches:', error);
+      // Fallback to admin endpoint
+      try {
+        const fallbackResponse = await api.get('/admin/batches');
+        setBatches(fallbackResponse.data);
+      } catch (fallbackError) {
+        console.error('Error fetching batches from fallback:', fallbackError);
+      }
     }
   };
 
@@ -316,15 +326,21 @@ function ExamManagement() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Exam Management</h1>
-          <p className="text-gray-600 mt-1">Manage exams, questions, and monitor performance</p>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1">
+            <span className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-blue-600" />
+            </span>
+            Exam Management
+          </h1>
+          <p className="text-gray-500 text-sm ml-11">Manage exams, questions, and monitor performance</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg"
+          className="flex items-center gap-2 px-4 py-2.5 text-white rounded-xl transition-all shadow-md shadow-blue-500/20 text-sm font-semibold"
+          style={{ background: 'linear-gradient(135deg, #2563eb, #0891b2)' }}
         >
-          <Plus className="w-5 h-5" />
-          <span>Create New Exam</span>
+          <Plus className="w-4 h-4" />
+          Create New Exam
         </button>
       </div>
 
@@ -633,7 +649,7 @@ function ExamManagement() {
                 </button>
                 <button
                   onClick={() => navigate(`/admin/exams/build/${exam._id}`)}
-                  className="p-2.5 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200 hover:scale-110"
+                  className="p-2.5 text-gray-600 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-all duration-200 hover:scale-110"
                   title="Build Exam"
                 >
                   <Settings className="w-4 h-4 mx-auto" />
@@ -761,7 +777,7 @@ function ExamManagement() {
             </div>
 
             <div className="mb-6">
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-l-4 border-purple-500 rounded-lg p-4 mb-4">
+              <div className="bg-gradient-to-r from-purple-50 to-cyan-50 border-l-4 border-purple-500 rounded-lg p-4 mb-4">
                 <div className="flex items-start space-x-3">
                   <Users className="w-5 h-5 text-purple-600 mt-0.5" />
                   <div>
@@ -804,7 +820,7 @@ function ExamManagement() {
               <button
                 onClick={handleBatchAssignment}
                 disabled={!selectedBatch || assigningBatch}
-                className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
                 {assigningBatch ? (
                   <>
@@ -930,6 +946,10 @@ function EditExamModal({ exam, onClose, onSuccess }) {
     passingScore: exam.passingScore,
     category: exam.category || '',
     allowedAttempts: exam.allowedAttempts || 1,
+    negativeMarking: {
+      enabled: exam.negativeMarking?.enabled || false,
+      deductionValue: exam.negativeMarking?.deductionValue ?? 0.25,
+    },
     // Advanced Features
     showCalculator: exam.showCalculator || false,
     showReviewScreen: exam.showReviewScreen || false,
@@ -1062,6 +1082,39 @@ function EditExamModal({ exam, onClose, onSuccess }) {
               required
             />
             <p className="text-xs text-gray-500 mt-1">Number of times a student can attempt this exam</p>
+          </div>
+
+          {/* Negative Marking */}
+          <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+            <label className="flex items-center space-x-3 cursor-pointer mb-3">
+              <input
+                type="checkbox"
+                checked={formData.negativeMarking?.enabled || false}
+                onChange={(e) => setFormData({ ...formData, negativeMarking: { ...formData.negativeMarking, enabled: e.target.checked } })}
+                className="w-4 h-4 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
+              />
+              <div>
+                <span className="font-medium text-gray-900">Negative Marking</span>
+                <p className="text-xs text-gray-600">Deduct marks for wrong answers</p>
+              </div>
+            </label>
+            {formData.negativeMarking?.enabled && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Deduction per wrong answer (fraction of question marks)
+                </label>
+                <input
+                  type="number"
+                  step="0.05"
+                  min="0.05"
+                  max="1"
+                  value={formData.negativeMarking?.deductionValue ?? 0.25}
+                  onChange={(e) => setFormData({ ...formData, negativeMarking: { ...formData.negativeMarking, deductionValue: parseFloat(e.target.value) } })}
+                  className="w-32 px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">e.g., 0.25 deducts 25% of the question's marks for a wrong answer</p>
+              </div>
+            )}
           </div>
 
           {/* Advanced Features */}
@@ -1296,6 +1349,7 @@ function CreateExamModal({ onClose, onSuccess }) {
     passingScore: 70,
     category: '',
     allowedAttempts: 3,
+    negativeMarking: { enabled: false, deductionValue: 0.25 },
     // Advanced Features
     showCalculator: false,
     showReviewScreen: false,
@@ -1432,6 +1486,39 @@ function CreateExamModal({ onClose, onSuccess }) {
               required
             />
             <p className="text-xs text-gray-500 mt-1">Number of times a student can attempt this exam</p>
+          </div>
+
+          {/* Negative Marking */}
+          <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+            <label className="flex items-center space-x-3 cursor-pointer mb-3">
+              <input
+                type="checkbox"
+                checked={formData.negativeMarking?.enabled || false}
+                onChange={(e) => setFormData({ ...formData, negativeMarking: { ...formData.negativeMarking, enabled: e.target.checked } })}
+                className="w-4 h-4 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
+              />
+              <div>
+                <span className="font-medium text-gray-900">Negative Marking</span>
+                <p className="text-xs text-gray-600">Deduct marks for wrong answers</p>
+              </div>
+            </label>
+            {formData.negativeMarking?.enabled && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Deduction per wrong answer (fraction of question marks)
+                </label>
+                <input
+                  type="number"
+                  step="0.05"
+                  min="0.05"
+                  max="1"
+                  value={formData.negativeMarking?.deductionValue ?? 0.25}
+                  onChange={(e) => setFormData({ ...formData, negativeMarking: { ...formData.negativeMarking, deductionValue: parseFloat(e.target.value) } })}
+                  className="w-32 px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">e.g., 0.25 deducts 25% of the question's marks for a wrong answer</p>
+              </div>
+            )}
           </div>
 
           {/* Advanced Features */}

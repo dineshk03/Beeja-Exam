@@ -27,6 +27,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  permissions: {
+    type: Object,
+    default: null, // Only for admin users
+  },
   assignedExams: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Exam',

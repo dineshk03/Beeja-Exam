@@ -238,28 +238,26 @@ const ProctorMonitor = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center space-x-3">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-lg">
-                <Shield className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Proctoring Monitor</h1>
-                <div className="flex items-center space-x-3 mt-1">
-                  <p className="text-gray-600">Real-time monitoring of ongoing exams</p>
-                  <div className="flex items-center space-x-1">
-                    {autoRefresh ? (
-                      <>
-                        <Wifi className="w-4 h-4 text-green-600 animate-pulse" />
-                        <span className="text-xs text-green-600 font-medium">Live</span>
-                      </>
-                    ) : (
-                      <>
-                        <WifiOff className="w-4 h-4 text-gray-400" />
-                        <span className="text-xs text-gray-400 font-medium">Paused</span>
-                      </>
-                    )}
-                  </div>
-                </div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1">
+              <span className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-blue-600" />
+              </span>
+              Proctoring Monitor
+            </h1>
+            <div className="flex items-center gap-3 ml-11">
+              <p className="text-gray-500 text-sm">Real-time monitoring of ongoing exams</p>
+              <div className="flex items-center gap-1.5">
+                {autoRefresh ? (
+                  <>
+                    <Wifi className="w-3.5 h-3.5 text-green-600 animate-pulse" />
+                    <span className="text-xs text-green-600 font-medium">Live</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="text-xs text-gray-400 font-medium">Paused</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -286,7 +284,7 @@ const ProctorMonitor = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+        <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-6 rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-blue-100 font-medium">Active Sessions</p>
@@ -329,7 +327,7 @@ const ProctorMonitor = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-6 rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+        <div className="bg-gradient-to-br from-purple-500 to-cyan-600 p-6 rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-purple-100 font-medium">Total Events</p>
@@ -425,7 +423,7 @@ const ProctorMonitor = () => {
                   onClick={() => handleSessionClick(session)}
                   className={`p-4 cursor-pointer transition-all duration-200 border-l-4 ${
                     selectedSession?.session === session.session 
-                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-600 shadow-md' 
+                      ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-600 shadow-md' 
                       : 'border-transparent hover:bg-gray-50 hover:border-gray-300'
                   }`}
                 >

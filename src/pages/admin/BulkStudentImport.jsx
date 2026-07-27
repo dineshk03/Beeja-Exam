@@ -24,10 +24,20 @@ function BulkStudentImport() {
 
   const fetchBatches = async () => {
     try {
-      const response = await api.get('/admin/batches');
-      setBatches(response.data);
+      const response = await api.get('/batches');
+      // Extract batch names for import
+      const batchNames = response.data.map(batch => batch.name);
+      setBatches(batchNames);
+      console.log('✅ Fetched batches for bulk import:', batchNames);
     } catch (error) {
-      console.error('Failed to fetch batches:', error);
+      console.error('Error fetching batches from /batches:', error);
+      // Fallback to admin endpoint
+      try {
+        const fallbackResponse = await api.get('/admin/batches');
+        setBatches(fallbackResponse.data);
+      } catch (fallbackError) {
+        console.error('Failed to fetch batches from fallback:', fallbackError);
+      }
     }
   };
   const [csvData, setCsvData] = useState('');

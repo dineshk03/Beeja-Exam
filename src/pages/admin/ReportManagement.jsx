@@ -155,16 +155,27 @@ const ReportManagement = () => {
 
   const fetchBatches = async () => {
     try {
-      const response = await api.get('/admin/batches');
-      console.log('Fetched batches:', response.data);
+      const response = await api.get('/batches');
+      console.log('✅ Fetched batches for reports:', response.data);
       setBatches(response.data || []);
       if (!response.data || response.data.length === 0) {
         console.warn('No batches found in the system');
       }
     } catch (error) {
-      console.error('Error fetching batches:', error);
-      setBatches([]);
-      showNotification('Failed to load batches', 'error');
+      console.error('Error fetching batches from /batches:', error);
+      // Fallback to admin endpoint
+      try {
+        const fallbackResponse = await api.get('/admin/batches');
+        const batchObjects = fallbackResponse.data.map(batchName => ({
+          _id: batchName,
+          name: batchName
+        }));
+        setBatches(batchObjects);
+      } catch (fallbackError) {
+        console.error('Error fetching batches from fallback:', fallbackError);
+        setBatches([]);
+        showNotification('Failed to load batches', 'error');
+      }
     }
   };
 
@@ -195,13 +206,21 @@ const ReportManagement = () => {
           showNotification('Report data loaded successfully', 'success');
         }
       } else if (format === 'csv') {
-        const csvContent = convertToCSV(response.data);
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
+        // Use backend CSV export for proper escaping
+        const exportUrl = `/api/admin/reports/${reportType}/export?${params.toString()}`;
+        const token = localStorage.getItem('auth-token');
+        const csvRes = await fetch(exportUrl, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const csvBlob = await csvRes.blob();
+        const url = URL.createObjectURL(csvBlob);
         const link = document.createElement('a');
         link.href = url;
         link.download = `${reportType}_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
         showNotification('CSV report exported successfully', 'success');
       } else {
         const dataStr = JSON.stringify(response.data, null, 2);
@@ -259,12 +278,12 @@ const ReportManagement = () => {
 
   const getColorClasses = (color) => {
     const colors = {
-      blue: 'from-blue-500 to-blue-600',
+      blue: 'from-blue-500 to-cyan-600',
       green: 'from-green-500 to-emerald-600',
-      purple: 'from-purple-500 to-indigo-600',
+      purple: 'from-purple-500 to-cyan-600',
       orange: 'from-orange-500 to-red-600',
       red: 'from-red-500 to-pink-600',
-      indigo: 'from-indigo-500 to-purple-600',
+      indigo: 'from-cyan-500 to-purple-600',
       pink: 'from-pink-500 to-rose-600',
       gray: 'from-gray-600 to-gray-700'
     };
@@ -297,20 +316,22 @@ const ReportManagement = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="bg-gradient-to-r from-green-600 to-teal-600 p-3 rounded-lg">
-              <FileText className="w-8 h-8 text-white" />
-            </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Report Management</h1>
-              <p className="text-gray-600 mt-1">Generate, export, and manage comprehensive reports</p>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1">
+                <span className="w-9 h-9 rounded-xl bg-teal-100 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-teal-600" />
+                </span>
+                Report Management
+              </h1>
+              <p className="text-gray-500 text-sm ml-11">Generate, export, and manage comprehensive reports</p>
             </div>
           </div>
           <button
             onClick={() => window.location.reload()}
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 hover:scale-105"
+            className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all text-sm font-medium"
           >
             <RefreshCw className="w-4 h-4" />
-            <span>Refresh</span>
+            Refresh
           </button>
         </div>
 
@@ -672,7 +693,7 @@ const ReportManagement = () => {
         {showScheduledReports && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowScheduledReports(false)}>
             <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6">
+              <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <Calendar className="w-8 h-8 text-white" />

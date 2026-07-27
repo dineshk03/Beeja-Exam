@@ -1,8 +1,8 @@
-# TCS iON Exam System - Server Deployment Guide
+# Beeja Exam Management - Server Deployment Guide
 
 ## 🚀 Deploy to Server: 54.91.136.135
 
-This guide will help you deploy your TCS iON exam system to your server using Docker.
+This guide will help you deploy your Beeja Exam Management to your server using Docker.
 
 ## 📋 Prerequisites
 
@@ -79,9 +79,9 @@ sudo docker-compose up -d
 
 After successful deployment:
 
-- **Frontend URL**: `http://54.91.136.135`
-- **API Base URL**: `http://54.91.136.135/api`
-- **Health Check**: `http://54.91.136.135/api/health`
+- **Frontend URL**: `http://examportal.com`
+- **API Base URL**: `http://examportal.com/api`
+- **Health Check**: `http://examportal.com/api/health`
 
 ## 🔧 Configuration Details
 
@@ -270,7 +270,7 @@ sudo chmod -R 755 /opt/exam-system
 
 ```bash
 # Test application health
-curl http://54.91.136.135/api/health
+curl http://examportal.com/api/health
 
 # Test database connection
 sudo docker-compose exec exam-app-prod node -e "
@@ -358,8 +358,8 @@ sudo docker-compose down && sudo docker-compose up -d
 
 ## 🎉 Success!
 
-Your TCS iON Exam System should now be live at:
-**http://54.91.136.135**
+Your Beeja Exam Management should now be live at:
+**http://examportal.com**
 
 The system includes all features:
 - ✅ Student and Admin interfaces

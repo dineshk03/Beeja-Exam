@@ -38,10 +38,10 @@ function InstructionsPage({ exam, onStart }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100 flex items-center justify-center p-4">
       <div className="max-w-4xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-8">
+        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-8">
           <h1 className="text-3xl font-bold mb-2">{exam.title}</h1>
           <p className="text-blue-100">{exam.description}</p>
         </div>

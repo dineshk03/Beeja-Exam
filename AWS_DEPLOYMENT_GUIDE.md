@@ -1,8 +1,8 @@
-# TCS iON Exam System - AWS Deployment Guide
+# Beeja Exam Management - AWS Deployment Guide
 
 ## Overview
 
-This guide provides step-by-step instructions to deploy your TCS iON Exam System to AWS using Docker containers, ECS (Elastic Container Service), and other AWS services.
+This guide provides step-by-step instructions to deploy your Beeja Exam Management to AWS using Docker containers, ECS (Elastic Container Service), and other AWS services.
 
 ## Architecture
 

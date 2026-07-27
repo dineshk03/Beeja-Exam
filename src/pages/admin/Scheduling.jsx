@@ -28,6 +28,7 @@ const Scheduling = () => {
     endTime: '',
     maxCandidates: 50,
     venue: 'Online',
+    allowedBatches: [], // Array of batch names that can access this schedule
     proctorSettings: {
       webcamRequired: true,
       screenRecording: false,
@@ -36,10 +37,43 @@ const Scheduling = () => {
     },
   });
 
+  const [availableBatches, setAvailableBatches] = useState([]);
+  const [batchInput, setBatchInput] = useState('');
+  const [showBatchSuggestions, setShowBatchSuggestions] = useState(false);
+
   useEffect(() => {
     fetchSchedules();
     fetchExams();
+    fetchAvailableBatches();
   }, []);
+
+  const fetchAvailableBatches = async () => {
+    try {
+      // Use the proper batch endpoint that returns all Batch model data
+      const response = await api.get('/batches');
+      // Extract just the batch names for the suggestions
+      const batchNames = response.data.map(batch => batch.name);
+      setAvailableBatches(batchNames);
+      console.log('✅ Fetched batches for scheduling:', batchNames);
+    } catch (error) {
+      console.error('Error fetching batches from /batches:', error);
+      // Fallback: try the users/batches endpoint
+      try {
+        const fallbackResponse = await api.get('/admin/users/batches');
+        setAvailableBatches(fallbackResponse.data);
+        console.log('✅ Fetched batches from fallback:', fallbackResponse.data);
+      } catch (fallbackError) {
+        console.error('Error fetching batches from fallback:', fallbackError);
+        // Final fallback: extract batches from existing schedules
+        const batchesFromSchedules = schedules
+          .filter(s => s.allowedBatches && s.allowedBatches.length > 0)
+          .flatMap(s => s.allowedBatches)
+          .filter((batch, index, arr) => arr.indexOf(batch) === index)
+          .sort();
+        setAvailableBatches(batchesFromSchedules);
+      }
+    }
+  };
 
   useEffect(() => {
     filterSchedules();
@@ -123,8 +157,11 @@ const Scheduling = () => {
       endTime: schedule.endTime,
       maxCandidates: schedule.maxCandidates,
       venue: schedule.venue,
+      allowedBatches: schedule.allowedBatches || [],
       proctorSettings: schedule.proctorSettings,
     });
+    setBatchInput('');
+    setShowBatchSuggestions(false);
     setShowModal(true);
   };
 
@@ -150,8 +187,11 @@ const Scheduling = () => {
       endTime: schedule.endTime,
       maxCandidates: schedule.maxCandidates,
       venue: schedule.venue,
+      allowedBatches: schedule.allowedBatches || [],
       proctorSettings: schedule.proctorSettings,
     });
+    setBatchInput('');
+    setShowBatchSuggestions(false);
     setShowModal(true);
   };
 
@@ -176,6 +216,7 @@ const Scheduling = () => {
       endTime: '',
       maxCandidates: 50,
       venue: 'Online',
+      allowedBatches: [],
       proctorSettings: {
         webcamRequired: true,
         screenRecording: false,
@@ -183,6 +224,8 @@ const Scheduling = () => {
         browserLockdown: false,
       },
     });
+    setBatchInput('');
+    setShowBatchSuggestions(false);
   };
 
   const getStatusBadge = (status) => {
@@ -211,8 +254,13 @@ const Scheduling = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Exam Scheduling</h1>
-            <p className="text-gray-600 mt-1">Schedule and manage exam sessions</p>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1">
+              <span className="w-9 h-9 rounded-xl bg-cyan-100 flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-cyan-600" />
+              </span>
+              Exam Scheduling
+            </h1>
+            <p className="text-gray-500 text-sm ml-11">Schedule and manage exam sessions</p>
           </div>
           <button
             onClick={() => {
@@ -220,10 +268,11 @@ const Scheduling = () => {
               resetForm();
               setShowModal(true);
             }}
-            className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg"
+            className="flex items-center gap-2 px-4 py-2.5 text-white rounded-xl transition-all shadow-md shadow-blue-500/20 text-sm font-semibold"
+            style={{ background: 'linear-gradient(135deg, #2563eb, #0891b2)' }}
           >
-            <Plus className="w-5 h-5" />
-            <span>Create Schedule</span>
+            <Plus className="w-4 h-4" />
+            Create Schedule
           </button>
         </div>
 
@@ -356,7 +405,7 @@ const Scheduling = () => {
 
         {/* Quick Insights */}
         {filteredSchedules.length > 0 && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg shadow-md p-6 border-l-4 border-blue-500">
             <div className="flex items-start space-x-3">
               <Activity className="w-6 h-6 text-blue-600 mt-1" />
               <div className="flex-1">
@@ -491,7 +540,7 @@ const Scheduling = () => {
                         </span>
                       </div>
                       {schedule.exam.category && (
-                        <span className="inline-block mt-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded-full hover:bg-indigo-200 transition-colors">
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-cyan-100 text-cyan-700 text-xs rounded-full hover:bg-cyan-200 transition-colors">
                           {schedule.exam.category}
                         </span>
                       )}
@@ -594,7 +643,7 @@ const Scheduling = () => {
                 </tr>
                 {/* Expanded Row Details */}
                 {expandedRow === schedule._id && (
-                  <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500">
+                  <tr className="bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-500">
                     <td colSpan="6" className="px-6 py-4">
                       <div className="animate-fade-in">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -676,6 +725,50 @@ const Scheduling = () => {
                                 </span>
                               </div>
                             </div>
+                          </div>
+                        </div>
+
+                        {/* Batch Access Control */}
+                        <div className="mt-4 bg-white rounded-lg p-4 shadow-sm">
+                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                            <Users className="w-4 h-4 mr-2 text-orange-600" />
+                            Batch Access Control
+                          </h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between items-start">
+                              <span className="text-gray-600">Allowed Batches:</span>
+                              <div className="flex flex-col items-end">
+                                {schedule.allowedBatches && schedule.allowedBatches.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1 justify-end">
+                                    {schedule.allowedBatches.map((batch, index) => (
+                                      <span
+                                        key={index}
+                                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800"
+                                      >
+                                        {batch}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                                    No batch restrictions
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Access Type:</span>
+                              <span className="font-medium text-xs">
+                                {schedule.allowedBatches && schedule.allowedBatches.length > 0 
+                                  ? `Batch-based (${schedule.allowedBatches.length} batch${schedule.allowedBatches.length > 1 ? 'es' : ''})` 
+                                  : 'Assignment-based only'}
+                              </span>
+                            </div>
+                            {schedule.allowedBatches && schedule.allowedBatches.length > 0 && (
+                              <div className="mt-2 p-2 bg-orange-50 rounded text-xs text-orange-700">
+                                <strong>Note:</strong> Students in these batches OR assigned to the exam can access this schedule.
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -808,6 +901,121 @@ const Scheduling = () => {
                     min="1"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
+                </div>
+              </div>
+
+              {/* Batch Access Control */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Users className="w-4 h-4 inline mr-1" />
+                  Allowed Batches (Optional)
+                </label>
+                <div className="space-y-2">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Type to search existing batches or add new ones..."
+                      value={batchInput}
+                      onChange={(e) => {
+                        setBatchInput(e.target.value);
+                        setShowBatchSuggestions(e.target.value.length > 0);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ',') {
+                          e.preventDefault();
+                          const batch = batchInput.trim();
+                          if (batch && !formData.allowedBatches.includes(batch)) {
+                            setFormData({ 
+                              ...formData, 
+                              allowedBatches: [...formData.allowedBatches, batch] 
+                            });
+                          }
+                          setBatchInput('');
+                          setShowBatchSuggestions(false);
+                        }
+                      }}
+                      onBlur={() => {
+                        // Delay hiding suggestions to allow clicking
+                        setTimeout(() => setShowBatchSuggestions(false), 200);
+                      }}
+                      onFocus={() => {
+                        if (batchInput.length > 0) setShowBatchSuggestions(true);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                    
+                    {/* Batch Suggestions Dropdown */}
+                    {showBatchSuggestions && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                        {availableBatches
+                          .filter(batch => 
+                            batch.toLowerCase().includes(batchInput.toLowerCase()) &&
+                            !formData.allowedBatches.includes(batch)
+                          )
+                          .map((batch, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => {
+                                setFormData({ 
+                                  ...formData, 
+                                  allowedBatches: [...formData.allowedBatches, batch] 
+                                });
+                                setBatchInput('');
+                                setShowBatchSuggestions(false);
+                              }}
+                              className="w-full px-3 py-2 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+                            >
+                              <span className="font-medium">{batch}</span>
+                            </button>
+                          ))
+                        }
+                        {availableBatches.filter(batch => 
+                          batch.toLowerCase().includes(batchInput.toLowerCase()) &&
+                          !formData.allowedBatches.includes(batch)
+                        ).length === 0 && batchInput.trim() && (
+                          <div className="px-3 py-2 text-gray-500 text-sm">
+                            Press Enter to add "{batchInput.trim()}" as new batch
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-gray-500">
+                    Type to search existing batches or add new ones. Press Enter or comma to add. Leave empty to use exam-level assignments only.
+                  </p>
+                  
+                  {/* Available Batches Display */}
+                  {availableBatches.length > 0 && (
+                    <div className="text-xs text-gray-600">
+                      <span className="font-medium">Existing batches:</span> {availableBatches.join(', ')}
+                    </div>
+                  )}
+                  
+                  {/* Selected Batches */}
+                  {formData.allowedBatches.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {formData.allowedBatches.map((batch, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                        >
+                          {batch}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newBatches = formData.allowedBatches.filter((_, i) => i !== index);
+                              setFormData({ ...formData, allowedBatches: newBatches });
+                            }}
+                            className="ml-1 text-blue-600 hover:text-blue-800"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

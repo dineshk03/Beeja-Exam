@@ -21,42 +21,54 @@ code {
     monospace;
 }
 
+/* Theme: Blue & Cyan Corporate */
+:root {
+  --color-primary:       #2563eb;
+  --color-primary-light: #93c5fd;
+  --color-primary-dark:  #1d4ed8;
+  --color-accent:        #0891b2;
+  --color-accent-light:  #67e8f9;
+  --sidebar-bg:          #0f172a;
+  --sidebar-active:      #2563eb;
+  --sidebar-hover:       #1e3a8a;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #eff6ff;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #93c5fd;
   border-radius: 4px;
   transition: background 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #3b82f6;
 }
 
-/* Custom scrollbar for dashboard sections */
 .scrollbar-blue::-webkit-scrollbar-thumb {
-  background: #93c5fd;
-}
-
-.scrollbar-blue::-webkit-scrollbar-thumb:hover {
   background: #60a5fa;
 }
 
+.scrollbar-blue::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+/* Keep purple alias for legacy */
 .scrollbar-purple::-webkit-scrollbar-thumb {
-  background: #d8b4fe;
+  background: #60a5fa;
 }
 
 .scrollbar-purple::-webkit-scrollbar-thumb:hover {
-  background: #c084fc;
+  background: #2563eb;
 }
 
 /* Custom Animations */
@@ -73,10 +85,10 @@ code {
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4);
   }
   50% {
-    box-shadow: 0 0 20px 5px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 20px 5px rgba(37, 99, 235, 0.2);
   }
 }
 

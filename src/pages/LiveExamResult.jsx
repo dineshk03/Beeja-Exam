@@ -110,33 +110,17 @@ function LiveExamResult() {
   const totalQuestions = result.totalQuestions || (result.exam?.questions?.length || 0);
   const scorePercentage = result.percentage ?? (((result.score || 0) / (totalQuestions || 1)) * 100);
   const isPassed = scorePercentage >= 50;
-  const correctAnswers = result.score || 0;
+  const correctAnswers = result.correctAnswers || 0;
   
-  // Calculate answered questions more accurately from actual answers
+  // Use backend-calculated values directly, with fallbacks for older data
   const answeredQuestions = result.answeredQuestions ?? (result.answers ? 
     Object.keys(result.answers).filter(key => {
       const answer = result.answers[key];
       return answer !== null && answer !== undefined && answer !== '';
     }).length : 0);
   
-  // Calculate incorrect answers more accurately
-  // Method 1: If we have explicit counts from backend
-  let incorrectAnswers = result.incorrectAnswers;
-  
-  // Method 2: If we have question details from backend
-  if (!incorrectAnswers && result.questionDetails) {
-    incorrectAnswers = result.questionDetails.filter(q => 
-      q.studentAnswer !== null && q.studentAnswer !== undefined && !q.isCorrect
-    ).length;
-  }
-  
-  // Method 3: Calculate from answered questions - correct answers
-  if (incorrectAnswers === undefined || incorrectAnswers === null) {
-    incorrectAnswers = Math.max(0, answeredQuestions - correctAnswers);
-  }
-  
-  // Calculate unanswered questions
-  const unansweredQuestions = Math.max(0, totalQuestions - answeredQuestions);
+  const incorrectAnswers = result.incorrectAnswers ?? Math.max(0, answeredQuestions - correctAnswers);
+  const unansweredQuestions = result.unansweredQuestions ?? Math.max(0, totalQuestions - answeredQuestions);
   
   // Validation: ensure the numbers add up correctly
   const calculatedTotal = correctAnswers + incorrectAnswers + unansweredQuestions;
@@ -172,6 +156,117 @@ function LiveExamResult() {
   };
 
   const gradeInfo = getGrade(scorePercentage);
+
+  // Helper function to format correct answers based on question type
+  const formatCorrectAnswer = (questionDetail) => {
+    const { questionType, correctAnswer } = questionDetail;
+    
+    if (!correctAnswer) return 'Not available';
+    
+    switch (questionType) {
+      case 'multiple-choice':
+      case 'single-choice':
+        // For single choice, correctAnswer is an index number
+        if (questionDetail.options && typeof correctAnswer === 'number' && questionDetail.options[correctAnswer]) {
+          return `${questionDetail.options[correctAnswer]}`;
+        }
+        return `Option ${correctAnswer + 1}`;
+        
+      case 'multiple-answer':
+        // For multiple answers, correctAnswer is an array of indices
+        if (Array.isArray(correctAnswer) && questionDetail.options) {
+          return correctAnswer.map(index => 
+            questionDetail.options[index] || `Option ${index + 1}`
+          ).join(' AND ');
+        }
+        return Array.isArray(correctAnswer) ? correctAnswer.join(', ') : String(correctAnswer);
+        
+      case 'short-answer':
+        // For short answers, correctAnswer is an array of acceptable answers
+        return Array.isArray(correctAnswer) ? correctAnswer.join(' OR ') : String(correctAnswer);
+        
+      case 'match-following':
+        // For matching, correctAnswer is an object/map of matches
+        if (typeof correctAnswer === 'object' && correctAnswer !== null && !Array.isArray(correctAnswer)) {
+          const entries = Object.entries(correctAnswer);
+          if (entries.length === 0) {
+            return 'No correct matches defined in question';
+          }
+          
+          const matches = entries
+            .map(([key, value]) => {
+              // Handle both string and number keys/values
+              const keyIndex = isNaN(parseInt(key)) ? key : parseInt(key);
+              const valueIndex = isNaN(parseInt(value)) ? value : parseInt(value);
+              
+              // Get item names or fallback to generic names
+              const leftItem = questionDetail.leftItems?.[keyIndex] || 
+                              (typeof keyIndex === 'string' ? keyIndex : `Item ${keyIndex + 1}`);
+              const rightItem = questionDetail.rightItems?.[valueIndex] || 
+                               (typeof valueIndex === 'string' ? valueIndex : `Option ${valueIndex + 1}`);
+              
+              return `${leftItem} → ${rightItem}`;
+            })
+            .join(', ');
+          return matches;
+        }
+        
+        // Handle case where correctAnswer is an empty array or null
+        if (Array.isArray(correctAnswer) && correctAnswer.length === 0) {
+          return 'Correct matches not configured for this question';
+        }
+        
+        return 'Correct answer data not available';
+        
+      case 'code-test':
+        return 'See expected output';
+        
+      default:
+        return String(correctAnswer);
+    }
+  };
+
+  // Helper function to format student answers
+  const formatStudentAnswer = (questionDetail) => {
+    const { questionType, studentAnswer } = questionDetail;
+    
+    if (studentAnswer === null || studentAnswer === undefined) return 'No answer';
+    
+    switch (questionType) {
+      case 'multiple-choice':
+      case 'single-choice':
+        if (questionDetail.options && typeof studentAnswer === 'number' && questionDetail.options[studentAnswer]) {
+          return `${questionDetail.options[studentAnswer]}`;
+        }
+        return `Option ${studentAnswer + 1}`;
+        
+      case 'multiple-answer':
+        if (Array.isArray(studentAnswer) && questionDetail.options) {
+          return studentAnswer.map(index => 
+            questionDetail.options[index] || `Option ${index + 1}`
+          ).join(' AND ');
+        }
+        return Array.isArray(studentAnswer) ? studentAnswer.join(', ') : String(studentAnswer);
+        
+      case 'match-following':
+        if (typeof studentAnswer === 'object' && studentAnswer !== null) {
+          return Object.entries(studentAnswer)
+            .map(([key, value]) => {
+              const keyIndex = isNaN(parseInt(key)) ? key : parseInt(key);
+              const valueIndex = isNaN(parseInt(value)) ? value : parseInt(value);
+              
+              const leftItem = questionDetail.leftItems?.[keyIndex] || `Item ${keyIndex + 1}`;
+              const rightItem = questionDetail.rightItems?.[valueIndex] || `Option ${valueIndex + 1}`;
+              return `${leftItem} → ${rightItem}`;
+            })
+            .join(', ');
+        }
+        return String(studentAnswer);
+        
+      default:
+        return String(studentAnswer);
+    }
+  };
 
   return (
     <>
@@ -512,7 +607,7 @@ function LiveExamResult() {
         `}
       </style>
       
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 relative print-container">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100 py-8 relative print-container">
       {showCelebration && (
         <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
           <div className="animate-bounce">
@@ -788,24 +883,21 @@ function LiveExamResult() {
                   </button>
                 </div>
 
-                {result.exam?.showQuestionAnalysis ? (
+                {result.exam?.showQuestionAnalysis && result.questionDetails ? (
                   <div className="space-y-4">
-                    {(result.exam?.questions || []).map((question, index) => {
-                      const qId = question?._id ?? index;
-                      const studentAnswer = result.answers?.[question?._id] ?? result.answers?.[index];
-                      const correctAnswer = question?.correctAnswer;
-                      const hasAnswer = studentAnswer !== null && studentAnswer !== undefined && studentAnswer !== '';
-                      const isCorrect = hasAnswer && (studentAnswer === correctAnswer);
+                    {result.questionDetails.map((questionDetail, index) => {
+                      const hasAnswer = questionDetail.studentAnswer !== null && questionDetail.studentAnswer !== undefined;
+                      const isCorrect = questionDetail.isCorrect;
 
                       return (
-                        <div key={qId} className={`p-4 rounded-lg border-2 ${
+                        <div key={questionDetail.questionId || index} className={`p-4 rounded-lg border-2 ${
                           !hasAnswer ? 'border-gray-300 bg-gray-50' :
                             isCorrect ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'
                         }`}>
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center space-x-3 mb-2">
-                                <span className="text-sm font-medium text-gray-600">Q{index + 1}</span>
+                                <span className="text-sm font-medium text-gray-600">Q{questionDetail.questionOrder || index + 1}</span>
                                 {!hasAnswer ? (
                                   <span className="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded-full">Unanswered</span>
                                 ) : isCorrect ? (
@@ -817,12 +909,12 @@ function LiveExamResult() {
 
                               {showQuestionDetails && (
                                 <div className="space-y-2">
-                                  <p className="text-gray-800">{question?.question || question?.text || `Question ${index + 1}`}</p>
+                                  <p className="text-gray-800">{questionDetail.questionText || `Question ${questionDetail.questionOrder || index + 1}`}</p>
                                   {hasAnswer && (
                                     <div className="text-sm">
-                                      <p className="text-gray-600">Your answer: <span className="font-medium">{String(studentAnswer)}</span></p>
-                                      {!isCorrect && (
-                                        <p className="text-green-600">Correct answer: <span className="font-medium">{String(correctAnswer)}</span></p>
+                                      <p className="text-gray-600">Your answer: <span className="font-medium">{formatStudentAnswer(questionDetail)}</span></p>
+                                      {!isCorrect && questionDetail.correctAnswer && (
+                                        <p className="text-green-600">Correct answer: <span className="font-medium">{formatCorrectAnswer(questionDetail)}</span></p>
                                       )}
                                     </div>
                                   )}

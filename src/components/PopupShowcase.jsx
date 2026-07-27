@@ -107,7 +107,7 @@ const PopupShowcase = () => {
             
             <button
               onClick={() => setShowToast(true)}
-              className="w-full px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-medium hover:bg-indigo-200 transition-colors"
+              className="w-full px-4 py-2 bg-cyan-100 text-cyan-700 rounded-lg font-medium hover:bg-cyan-200 transition-colors"
             >
               Show Toast with Actions
             </button>
@@ -115,7 +115,7 @@ const PopupShowcase = () => {
         </div>
 
         {/* Feature Highlights */}
-        <div className="mt-12 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-8">
+        <div className="mt-12 bg-gradient-to-br from-blue-50 to-cyan-100 rounded-2xl p-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">✨ Key Features</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

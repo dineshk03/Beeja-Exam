@@ -95,8 +95,8 @@ function Results() {
   const getGrade = (percentage) => {
     if (percentage >= 90) return { grade: 'A+', category: 'Outstanding', color: 'from-yellow-400 to-orange-500' };
     if (percentage >= 80) return { grade: 'A', category: 'Excellent', color: 'from-green-400 to-green-600' };
-    if (percentage >= 70) return { grade: 'B+', category: 'Very Good', color: 'from-blue-400 to-blue-600' };
-    if (percentage >= 60) return { grade: 'B', category: 'Good', color: 'from-indigo-400 to-indigo-600' };
+    if (percentage >= 70) return { grade: 'B+', category: 'Very Good', color: 'from-blue-400 to-cyan-600' };
+    if (percentage >= 60) return { grade: 'B', category: 'Good', color: 'from-cyan-400 to-cyan-600' };
     if (percentage >= 50) return { grade: 'C', category: 'Average', color: 'from-purple-400 to-purple-600' };
     if (percentage >= 40) return { grade: 'D', category: 'Below Average', color: 'from-orange-400 to-orange-600' };
     return { grade: 'F', category: 'Fail', color: 'from-red-400 to-red-600' };
@@ -159,7 +159,7 @@ function Results() {
         </div>
 
         {/* Score Display */}
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg p-8 mb-6 text-white text-center">
+        <div className="bg-gradient-to-r from-blue-500 to-cyan-600 rounded-lg p-8 mb-6 text-white text-center">
           <div className="text-6xl font-bold mb-2">{percentage.toFixed(1)}%</div>
           <div className="text-lg opacity-90">Your Score</div>
         </div>

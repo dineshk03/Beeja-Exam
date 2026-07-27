@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TCS iON Exam System - AWS Deployment Script
+# Beeja Exam Management - AWS Deployment Script
 set -e
 
 # Configuration
@@ -183,7 +183,7 @@ get_app_url() {
 
 # Main deployment function
 main() {
-    echo_info "Starting deployment of TCS iON Exam System to AWS..."
+    echo_info "Starting deployment of Beeja Exam Management to AWS..."
     
     check_aws_cli
     check_docker

@@ -86,10 +86,20 @@ function StudentManagement() {
 
   const fetchBatches = async () => {
     try {
-      const response = await api.get('/admin/batches');
-      setBatches(response.data);
+      const response = await api.get('/batches');
+      // Extract batch names for filtering
+      const batchNames = response.data.map(batch => batch.name);
+      setBatches(batchNames);
+      console.log('✅ Fetched batches for student management:', batchNames);
     } catch (error) {
-      console.error('Error fetching batches:', error);
+      console.error('Error fetching batches from /batches:', error);
+      // Fallback to admin endpoint
+      try {
+        const fallbackResponse = await api.get('/admin/batches');
+        setBatches(fallbackResponse.data);
+      } catch (fallbackError) {
+        console.error('Error fetching batches from fallback:', fallbackError);
+      }
     }
   };
 
@@ -198,40 +208,43 @@ function StudentManagement() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <div className="flex items-center space-x-3">
-              <h1 className="text-3xl font-bold text-gray-900">Student Management</h1>
-              <Sparkles className="w-6 h-6 text-yellow-500 animate-pulse" />
-            </div>
-            <p className="text-gray-600 mt-2">Manage student accounts and exam assignments</p>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1">
+              <span className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center">
+                <Users className="w-5 h-5 text-blue-600" />
+              </span>
+              Student Management
+            </h1>
+            <p className="text-gray-500 text-sm ml-11">Manage student accounts and exam assignments</p>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => fetchStudents()}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all text-sm font-medium"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>Refresh</span>
+              <span className="hidden sm:inline">Refresh</span>
             </button>
             <button
               onClick={() => navigate('/admin/students/bulk-import')}
-              className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all hover:scale-105 shadow-md"
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-500/20 text-sm font-semibold"
             >
-              <Upload className="w-5 h-5" />
-              <span>Bulk Import</span>
+              <Upload className="w-4 h-4" />
+              Bulk Import
             </button>
             <button
               onClick={() => navigate('/admin/students/create')}
-              className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all hover:scale-105 shadow-md"
+              className="flex items-center gap-2 px-4 py-2.5 text-white rounded-xl transition-all shadow-md shadow-blue-500/20 text-sm font-semibold"
+              style={{ background: 'linear-gradient(135deg, #2563eb, #0891b2)' }}
             >
-              <UserPlus className="w-5 h-5" />
-              <span>Add Student</span>
+              <UserPlus className="w-4 h-4" />
+              Add Student
             </button>
           </div>
         </div>
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white hover:scale-105 transition-transform cursor-pointer animate-fade-in-up">
+          <div className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-lg p-6 text-white hover:scale-105 transition-transform cursor-pointer animate-fade-in-up">
             <div className="flex items-center justify-between mb-2">
               <Users className="w-8 h-8 opacity-80" />
               <span className="text-3xl font-bold">{stats.total}</span>
@@ -386,39 +399,25 @@ function StudentManagement() {
         )}
 
         {/* Students Table */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-50">
+            <thead>
+              <tr style={{ background: 'linear-gradient(135deg, #0f172a, #1e40af)' }}>
+                <th className="px-5 py-3.5 text-left">
                   <input
                     type="checkbox"
                     checked={selectedStudents.length === filteredStudents.length && filteredStudents.length > 0}
                     onChange={toggleSelectAll}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 accent-blue-400 border-blue-300 rounded"
                   />
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Student
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Assigned Exams
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Batch
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Joined Date
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Student</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Email</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Assigned Exams</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Batch</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Joined Date</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Status</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-blue-200 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -450,7 +449,7 @@ function StudentManagement() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className={`flex-shrink-0 h-12 w-12 rounded-full flex items-center justify-center font-bold text-lg transition-transform group-hover:scale-110 ${
-                          student.isActive ? 'bg-gradient-to-br from-blue-400 to-blue-600 text-white' : 'bg-gray-200 text-gray-600'
+                          student.isActive ? 'bg-gradient-to-br from-blue-400 to-cyan-600 text-white' : 'bg-gray-200 text-gray-600'
                         }`}>
                           {student.name.charAt(0).toUpperCase()}
                         </div>

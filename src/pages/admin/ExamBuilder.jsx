@@ -141,7 +141,7 @@ function ExamBuilder() {
     const colors = {
       'multiple-choice': 'bg-blue-100 text-blue-800',
       'single-choice': 'bg-green-100 text-green-800',
-      'multiple-answer': 'bg-indigo-100 text-indigo-800',
+      'multiple-answer': 'bg-cyan-100 text-indigo-800',
       'short-answer': 'bg-purple-100 text-purple-800',
       'match-following': 'bg-yellow-100 text-yellow-800',
       'code-test': 'bg-red-100 text-red-800',

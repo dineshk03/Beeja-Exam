@@ -89,7 +89,7 @@ class NotificationManager {
       success: 'bg-gradient-to-r from-green-500 to-emerald-600 shadow-green-500/25',
       warning: 'bg-gradient-to-r from-yellow-500 to-orange-500 shadow-yellow-500/25',
       error: 'bg-gradient-to-r from-red-500 to-rose-600 shadow-red-500/25',
-      info: 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-blue-500/25'
+      info: 'bg-gradient-to-r from-blue-500 to-cyan-600 shadow-blue-500/25'
     };
     return `${base} ${types[type] || types.info}`;
   }

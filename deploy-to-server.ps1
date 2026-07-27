@@ -1,4 +1,4 @@
-# TCS iON Exam System - Server Deployment Script
+# Beeja Exam Management - Server Deployment Script
 param(
     [Parameter(Mandatory=$false)]
     [string]$ServerIP = "54.91.136.135",
@@ -186,7 +186,7 @@ function Stop-Application {
 }
 
 # Main execution
-Write-Info "TCS iON Exam System - Server Deployment"
+Write-Info "Beeja Exam Management - Server Deployment"
 Write-Info "Target Server: $ServerIP"
 Write-Info "Action: $Action"
 

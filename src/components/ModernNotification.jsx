@@ -68,7 +68,7 @@ const ModernNotification = ({
     },
     info: {
       icon: Info,
-      bgColor: 'bg-gradient-to-r from-blue-500 to-indigo-600',
+      bgColor: 'bg-gradient-to-r from-blue-500 to-cyan-600',
       textColor: 'text-white',
       progressColor: 'bg-white/30',
       shadowColor: 'shadow-blue-500/25'

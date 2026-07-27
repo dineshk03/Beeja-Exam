@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, X, Check, RefreshCw } from 'lucide-react';
+import { Camera, Check, RefreshCw, AlertCircle } from 'lucide-react';
 
 function PhotoCapture({ onCapture, onClose, isInitialCapture = false }) {
   const videoRef = useRef(null);
@@ -22,7 +22,7 @@ function PhotoCapture({ onCapture, onClose, isInitialCapture = false }) {
         video: { width: 640, height: 480, facingMode: 'user' },
         audio: false,
       });
-      
+
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -48,13 +48,13 @@ function PhotoCapture({ onCapture, onClose, isInitialCapture = false }) {
 
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    
+
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
+
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
     setCapturedImage(imageData);
   };
@@ -73,18 +73,13 @@ function PhotoCapture({ onCapture, onClose, isInitialCapture = false }) {
     }
   };
 
-  const handleClose = () => {
-    if (!isInitialCapture) {
-      stopCamera();
-      onClose();
-    }
-  };
+  // handleClose removed - photo capture is mandatory during exams
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
+        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Camera className="w-6 h-6" />
@@ -93,20 +88,13 @@ function PhotoCapture({ onCapture, onClose, isInitialCapture = false }) {
                   {isInitialCapture ? 'Identity Verification' : 'Proctoring Photo'}
                 </h2>
                 <p className="text-sm text-blue-100">
-                  {isInitialCapture 
-                    ? 'Please capture your photo to verify your identity' 
+                  {isInitialCapture
+                    ? 'Please capture your photo to verify your identity'
                     : 'Periodic photo capture for exam monitoring'}
                 </p>
               </div>
             </div>
-            {!isInitialCapture && (
-              <button
-                onClick={handleClose}
-                className="hover:bg-white hover:bg-opacity-20 p-2 rounded-lg transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            )}
+            {/* Close button removed - photo capture is mandatory for exam integrity */}
           </div>
         </div>
 
@@ -115,7 +103,7 @@ function PhotoCapture({ onCapture, onClose, isInitialCapture = false }) {
           {error ? (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
               <div className="flex items-start">
-                <X className="w-6 h-6 text-red-600 mr-3 flex-shrink-0" />
+                <AlertCircle className="w-6 h-6 text-red-600 mr-3 flex-shrink-0" />
                 <div>
                   <h3 className="font-bold text-red-900 mb-1">Camera Error</h3>
                   <p className="text-red-700 text-sm">{error}</p>
@@ -212,7 +200,7 @@ function PhotoCapture({ onCapture, onClose, isInitialCapture = false }) {
         {isInitialCapture && (
           <div className="bg-gray-50 px-6 py-4 border-t">
             <p className="text-sm text-gray-600 text-center">
-              This photo will be used to verify your identity during the exam. 
+              This photo will be used to verify your identity during the exam.
               Please ensure it clearly shows your face.
             </p>
           </div>

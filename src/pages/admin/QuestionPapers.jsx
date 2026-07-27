@@ -24,7 +24,6 @@ const QuestionPapers = () => {
     name: '',
     code: '',
     description: '',
-    duration: 60,
     questions: [],
     isActive: true
   });
@@ -175,7 +174,6 @@ const QuestionPapers = () => {
       name: qp.name,
       code: qp.code,
       description: qp.description || '',
-      duration: qp.duration,
       questions: qp.questions.map(q => q._id),
       isActive: qp.isActive
     });
@@ -187,7 +185,6 @@ const QuestionPapers = () => {
       name: '',
       code: '',
       description: '',
-      duration: 60,
       questions: [],
       isActive: true
     });
@@ -239,12 +236,14 @@ const QuestionPapers = () => {
               <ArrowLeft className="w-6 h-6 text-gray-600" />
             </button>
             <div className="flex items-center space-x-3">
-              <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-3 rounded-lg">
-                <FileText className="w-8 h-8 text-white" />
-              </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Question Papers</h1>
-                <p className="text-gray-600 mt-1">{exam?.title || 'Loading...'}</p>
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1">
+                  <span className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-purple-600" />
+                  </span>
+                  Question Papers
+                </h1>
+                <p className="text-gray-500 text-sm ml-11">{exam?.title || 'Loading…'}</p>
               </div>
             </div>
           </div>
@@ -259,14 +258,15 @@ const QuestionPapers = () => {
               setShowCreateModal(true);
             }}
             disabled={!exam?.questions || exam.questions.length === 0}
-            className={`flex items-center space-x-2 px-6 py-3 rounded-lg transition-all duration-200 shadow-lg ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-md text-sm font-semibold ${
               !exam?.questions || exam.questions.length === 0
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl'
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'text-white shadow-blue-500/20'
             }`}
+            style={exam?.questions?.length > 0 ? { background: 'linear-gradient(135deg, #2563eb, #0891b2)' } : {}}
           >
-            <Plus className="w-5 h-5" />
-            <span>Create Question Paper</span>
+            <Plus className="w-4 h-4" />
+            Create Question Paper
           </button>
         </div>
 
@@ -544,20 +544,7 @@ const QuestionPapers = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Duration (minutes) *
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        min="1"
-                        value={formData.duration}
-                        onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
+                  <div className="grid grid-cols-1 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Status
@@ -650,7 +637,7 @@ const QuestionPapers = () => {
                   </button>
                   <button
                     type="submit"
-                    className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-colors"
+                    className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-colors"
                   >
                     <Save className="w-4 h-4" />
                     <span>{editingQP ? 'Update' : 'Create'} Question Paper</span>

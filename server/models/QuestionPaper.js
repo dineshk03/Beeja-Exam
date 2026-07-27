@@ -29,10 +29,7 @@ const questionPaperSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  duration: {
-    type: Number, // in minutes
-    required: true
-  },
+  // Duration is inherited from the parent exam - no need to store separately
   isActive: {
     type: Boolean,
     default: true

@@ -22,14 +22,14 @@ function MultipleAnswerQuestion({ question, selectedAnswers = [], onAnswerSelect
             onClick={() => handleToggle(index)}
             className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
               isSelected
-                ? 'border-indigo-500 bg-indigo-50'
-                : 'border-gray-200 bg-white hover:border-indigo-300 hover:bg-indigo-50'
+                ? 'border-cyan-500 bg-cyan-50'
+                : 'border-gray-200 bg-white hover:border-cyan-300 hover:bg-cyan-50'
             }`}
           >
             <div className="flex items-center">
               <div className={`w-6 h-6 rounded border-2 flex items-center justify-center mr-3 ${
                 isSelected
-                  ? 'border-indigo-500 bg-indigo-500'
+                  ? 'border-cyan-500 bg-cyan-500'
                   : 'border-gray-300'
               }`}>
                 {isSelected && (
@@ -47,7 +47,7 @@ function MultipleAnswerQuestion({ question, selectedAnswers = [], onAnswerSelect
                 )}
               </div>
               <span className={`text-sm font-medium mr-3 ${
-                isSelected ? 'text-indigo-700' : 'text-gray-700'
+                isSelected ? 'text-cyan-700' : 'text-gray-700'
               }`}>
                 {String.fromCharCode(65 + index)}.
               </span>

@@ -38,6 +38,35 @@ router.get('/my-results', authenticateToken, async (req, res) => {
   }
 });
 
+// Get user's earned certificates (passed exams only)
+router.get('/my-certificates', authenticateToken, async (req, res) => {
+  try {
+    const sessions = await ExamSession.find({
+      student: req.user.id,
+      status: 'submitted',
+      passed: true,
+    })
+      .populate('exam', 'title duration passingScore showResultsToStudents')
+      .sort({ submittedAt: -1 });
+
+    const certificates = sessions
+      .filter(s => s.exam && s.exam.showResultsToStudents !== false)
+      .map(s => ({
+        certificateId: `BA-${s._id.toString().slice(-8).toUpperCase()}`,
+        sessionId: s._id,
+        courseName: s.exam?.title || 'Exam',
+        score: Math.round(s.percentage || 0),
+        grade: s.grade || 'Pass',
+        completionDate: s.submittedAt || s.createdAt,
+      }));
+
+    res.json(certificates);
+  } catch (error) {
+    console.error('Error fetching certificates:', error);
+    res.status(500).json({ error: 'Failed to fetch certificates' });
+  }
+});
+
 // Get specific result/marksheet
 router.get('/:sessionId', authenticateToken, async (req, res) => {
   try {

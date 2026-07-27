@@ -78,7 +78,7 @@ const ModernToast = ({
     },
     info: {
       icon: Info,
-      bgColor: 'bg-gradient-to-br from-blue-50 to-indigo-50',
+      bgColor: 'bg-gradient-to-br from-blue-50 to-cyan-50',
       borderColor: 'border-blue-200',
       iconColor: 'text-blue-600',
       titleColor: 'text-blue-900',

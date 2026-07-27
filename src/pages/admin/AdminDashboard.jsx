@@ -39,14 +39,35 @@ function AdminDashboard() {
     if (!silent) setLoading(true);
     if (silent) setRefreshing(true);
     try {
-      const [statsRes, examsRes, sessionsRes] = await Promise.all([
-        api.get('/admin/stats'),
-        api.get('/admin/exams'),
-        api.get('/admin/sessions/recent')
+      const [statsRes] = await Promise.all([
+        api.get('/admin/basic-stats')
       ]);
       setStats(statsRes.data);
-      setRecentExams(examsRes.data.slice(0, 5));
-      setRecentSessions(sessionsRes.data || []);
+      
+      // Only fetch additional data if user has permissions
+      const additionalData = [];
+      
+      // Fetch exams only if user has examManagement.read permission
+      if (statsRes.data.userPermissions?.examManagement?.read) {
+        additionalData.push(
+          api.get('/admin/exams').then(res => ({ exams: res.data }))
+        );
+      }
+      
+      // Fetch recent sessions only if user has analytics permissions
+      if (statsRes.data.userPermissions?.analytics?.read || statsRes.data.userPermissions?.analytics?.dashboard) {
+        additionalData.push(
+          api.get('/admin/sessions/recent').then(res => ({ recentSessions: res.data }))
+        );
+      }
+      
+      if (additionalData.length > 0) {
+        const results = await Promise.all(additionalData);
+        results.forEach(result => {
+          if (result.exams) setRecentExams(result.exams.slice(0, 5));
+          if (result.recentSessions) setRecentSessions(result.recentSessions);
+        });
+      }
     } catch (error) {
       console.error('Error fetching stats:', error);
     } finally {
@@ -114,9 +135,9 @@ function AdminDashboard() {
       title: 'Total Sessions',
       value: stats?.totalSessions || 0,
       icon: Activity,
-      color: 'bg-indigo-500',
-      textColor: 'text-indigo-600',
-      bgColor: 'bg-indigo-50',
+      color: 'bg-cyan-500',
+      textColor: 'text-cyan-600',
+      bgColor: 'bg-cyan-50',
       link: '/admin/analytics',
       trend: stats?.sessionsTrend || 0,
       subtitle: 'All exam attempts'
@@ -182,7 +203,7 @@ function AdminDashboard() {
       title: 'Schedule Exam',
       description: 'Create exam schedules and time slots',
       icon: Calendar,
-      color: 'bg-indigo-500',
+      color: 'bg-cyan-500',
       action: () => navigate('/admin/scheduling'),
     },
     {
@@ -205,19 +226,20 @@ function AdminDashboard() {
     <AdminLayout>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <div className="flex items-center space-x-3">
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <Sparkles className="w-6 h-6 text-yellow-500 animate-pulse" />
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+            <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
           </div>
-          <p className="text-gray-600 mt-2">Manage exams, questions, and monitor system performance</p>
+          <p className="text-gray-500 text-sm">Manage exams, questions, and monitor system performance</p>
         </div>
         <button
           onClick={() => fetchStats(true)}
           disabled={refreshing}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-500/20"
+          style={{ background: 'linear-gradient(135deg, #2563eb, #0891b2)' }}
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-          <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+          <span>{refreshing ? 'Refreshing…' : 'Refresh'}</span>
         </button>
       </div>
 
@@ -234,7 +256,7 @@ function AdminDashboard() {
               <div
                 key={index}
                 onClick={() => navigate(stat.link)}
-                className={`bg-white rounded-xl shadow-md p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer border border-gray-100 hover:border-blue-300 hover:scale-105 group ${
+                className={`bg-white rounded-2xl shadow-sm p-6 hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-100 hover:border-blue-300 hover:scale-[1.03] group ${
                   animateStats ? 'animate-fade-in-up' : ''
                 }`}
                 style={{ animationDelay: `${index * 100}ms` }}
@@ -270,7 +292,7 @@ function AdminDashboard() {
             {/* Question Types Breakdown */}
             <div className="lg:col-span-2">
               {stats?.questionsByType && (
-                <div className="bg-white rounded-xl shadow-md p-6 h-full">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold text-gray-900">Questions by Type</h2>
                     <button 
@@ -393,7 +415,7 @@ function AdminDashboard() {
           {/* Recent Activity & Exams */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {/* Recent Exams */}
-            <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-2">
                   <h2 className="text-xl font-bold text-gray-900">Recent Exams</h2>
@@ -426,7 +448,7 @@ function AdminDashboard() {
                     <div 
                       key={exam._id}
                       onClick={() => navigate(`/admin/exams/build/${exam._id}`)}
-                      className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-all duration-300 cursor-pointer group animate-slide-in-right"
+                      className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-blue-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-all duration-300 cursor-pointer group animate-slide-in-right"
                       style={{ animationDelay: `${index * 100}ms` }}
                     >
                       <div className="flex items-center space-x-3">
@@ -468,7 +490,7 @@ function AdminDashboard() {
             </div>
 
             {/* Recent Sessions */}
-            <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-2">
                   <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
@@ -497,7 +519,7 @@ function AdminDashboard() {
                     return (
                       <div 
                         key={index}
-                        className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent transition-all duration-300 group animate-slide-in-right"
+                        className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-purple-300 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent transition-all duration-300 group animate-slide-in-right"
                         style={{ animationDelay: `${index * 100}ms` }}
                       >
                         <div className="flex items-center space-x-3 flex-1">
@@ -567,7 +589,7 @@ function AdminDashboard() {
                 <button
                   key={index}
                   onClick={action.action}
-                  className="flex items-start p-5 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-lg hover:scale-105 transition-all duration-300 text-left group bg-white animate-fade-in-up"
+                  className="flex items-start p-5 border border-gray-100 rounded-2xl hover:border-blue-400 hover:shadow-lg hover:scale-[1.03] transition-all duration-300 text-left group bg-white animate-fade-in-up shadow-sm"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div className={`${action.color} p-3 rounded-lg mr-4 group-hover:scale-110 transition-transform shadow-md`}>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Users, Plus, Edit, Trash2, Search, Calendar, BookOpen,
   CheckCircle, XCircle, AlertCircle, Save, X, Sparkles,
-  RefreshCw, TrendingUp, Award, Target
+  RefreshCw, TrendingUp, Award, Target, Layers
 } from 'lucide-react';
 import api from '../../api/axios';
 import AdminLayout from '../../components/admin/AdminLayout';
@@ -97,26 +97,29 @@ function BatchManagement() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center space-x-3">
-              <h1 className="text-3xl font-bold text-gray-900">Batch Management</h1>
-              <Sparkles className="w-6 h-6 text-yellow-500 animate-pulse" />
-            </div>
-            <p className="text-gray-600 mt-2">Create and manage student batches</p>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1">
+              <span className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center">
+                <Layers className="w-5 h-5 text-purple-600" />
+              </span>
+              Batch Management
+            </h1>
+            <p className="text-gray-500 text-sm ml-11">Create and manage student batches</p>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => fetchBatches()}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all text-sm font-medium"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>Refresh</span>
+              <span className="hidden sm:inline">Refresh</span>
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all hover:scale-105 shadow-lg"
+              className="flex items-center gap-2 px-4 py-2.5 text-white rounded-xl transition-all shadow-md shadow-blue-500/20 text-sm font-semibold"
+              style={{ background: 'linear-gradient(135deg, #2563eb, #0891b2)' }}
             >
-              <Plus className="w-5 h-5" />
-              <span>Create Batch</span>
+              <Plus className="w-4 h-4" />
+              Create Batch
             </button>
           </div>
         </div>
@@ -151,7 +154,7 @@ function BatchManagement() {
             </div>
             <p className="text-sm opacity-90">Active Batches</p>
           </div>
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white hover:scale-105 transition-transform cursor-pointer">
+          <div className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-lg p-6 text-white hover:scale-105 transition-transform cursor-pointer">
             <div className="flex items-center justify-between mb-2">
               <Target className="w-8 h-8 opacity-80" />
               <span className="text-3xl font-bold">{stats.totalStudents}</span>
@@ -457,7 +460,7 @@ function BatchModal({ batch, onClose, onSuccess }) {
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               {saving ? (
                 <>

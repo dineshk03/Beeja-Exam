@@ -1,0 +1,381 @@
+/* ========================================
+   COMPREHENSIVE CURSOR FIX FOR EXAM PORTAL
+   ======================================== */
+
+/* 1. GLOBAL RESET - Prevent text cursors everywhere */
+*, *::before, *::after {
+  cursor: default !important;
+  box-sizing: border-box;
+}
+
+/* 2. INTERACTIVE ATTRIBUTES - Any element with event handlers */
+[onclick],
+[onmousedown],
+[onmouseup],
+[onmouseover],
+[onfocus],
+[onblur],
+[onkeydown],
+[onkeyup],
+[role="button"],
+[role="link"],
+[role="tab"],
+[role="menuitem"],
+[role="option"],
+[tabindex]:not([tabindex="-1"]),
+[data-clickable="true"],
+[data-interactive="true"] {
+  cursor: pointer !important;
+}
+
+/* 3. HTML INTERACTIVE ELEMENTS - Standard form and navigation elements */
+button, 
+a, 
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="file"],
+input[type="range"],
+select,
+option,
+summary,
+details,
+label[for],
+[role="button"],
+[role="link"],
+[role="checkbox"],
+[role="radio"],
+[role="tab"],
+[role="menuitem"] {
+  cursor: pointer !important;
+}
+
+/* 4. CUSTOM CLASSES - Application-specific interactive classes */
+.cursor-pointer,
+.clickable,
+.btn,
+.button,
+.link,
+.nav-link,
+.menu-item,
+.tab,
+.card-clickable,
+.interactive,
+[data-testid*="button"],
+[data-testid*="link"],
+[class*="clickable"],
+[class*="interactive"] {
+  cursor: pointer !important;
+}
+
+/* 5. TEXT INPUT ELEMENTS - Only these should have text cursor */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="url"],
+input[type="tel"],
+input[type="number"],
+input:not([type]),
+textarea,
+[contenteditable="true"],
+.cursor-text,
+.text-input {
+  cursor: text !important;
+  user-select: text !important;
+}
+
+/* 6. DROPDOWN ELEMENTS - Pointer cursor for selections */
+select,
+option,
+datalist,
+.dropdown,
+.select,
+.combobox {
+  cursor: pointer !important;
+}
+
+/* 7. TEXT ELEMENTS - Default cursor, no text selection */
+div, 
+span, 
+p, 
+h1, h2, h3, h4, h5, h6, 
+label:not([for]),
+li,
+td:not(.cursor-pointer),
+th:not(.cursor-pointer),
+nav,
+header,
+footer,
+section,
+article,
+aside,
+main,
+figure,
+figcaption,
+blockquote,
+pre,
+code:not(.cursor-pointer),
+small,
+strong,
+em,
+mark,
+time {
+  cursor: default !important;
+  user-select: none !important;
+}
+
+/* Allow text selection only in actual input fields */
+input, 
+textarea,
+[contenteditable="true"] {
+  user-select: text !important;
+}
+
+/* 8. TAILWIND CSS PATTERNS - Common interactive patterns */
+
+/* 8a. HOVER STATES - Elements with hover effects are usually clickable */
+*[class*="hover:bg-"],
+*[class*="hover:text-"],
+*[class*="hover:border-"],
+*[class*="hover:shadow-"],
+*[class*="hover:opacity-"],
+*[class*="hover:scale-"],
+*[class*="hover:transform"],
+.hover\:bg-gray-200:hover,
+.hover\:bg-blue-700:hover,
+.hover\:bg-green-700:hover,
+.hover\:bg-red-700:hover,
+.hover\:bg-gray-50:hover,
+.hover\:bg-blue-50:hover {
+  cursor: pointer !important;
+}
+
+/* 8b. BACKGROUND COLORS - Colored backgrounds often indicate buttons */
+.bg-blue-600, .bg-blue-500, .bg-blue-700,
+.bg-green-600, .bg-green-500, .bg-green-700,
+.bg-red-600, .bg-red-500, .bg-red-700,
+.bg-gray-600, .bg-gray-500, .bg-gray-700,
+.bg-yellow-600, .bg-yellow-500,
+.bg-purple-600, .bg-purple-500,
+.bg-indigo-600, .bg-indigo-500 {
+  cursor: pointer !important;
+}
+
+/* 8c. BUTTON SHAPES - Common button styling patterns */
+.rounded-lg, .rounded-md, .rounded-full, .rounded,
+.border, .border-2, .border-gray-300,
+.shadow, .shadow-md, .shadow-lg, .shadow-xl {
+  cursor: pointer !important;
+}
+
+/* 8d. LAYOUT PATTERNS - Common interactive layouts */
+.flex.items-center.space-x-2,
+.flex.items-center.justify-center,
+.flex.items-center.justify-between,
+.grid.gap-4, .grid.gap-6,
+.space-x-2, .space-x-3, .space-x-4 {
+  cursor: pointer !important;
+}
+
+/* 8e. PADDING PATTERNS - Button-like padding */
+.px-4.py-2, .px-6.py-2, .px-3.py-1, .px-2.py-1,
+.p-2, .p-3, .p-4, .p-6,
+.py-2.px-4, .py-3.px-6 {
+  cursor: pointer !important;
+}
+
+/* 8f. SIZE PATTERNS - Icon buttons and small interactive elements */
+.w-8.h-8, .w-10.h-10, .w-12.h-12,
+.w-6.h-6, .w-5.h-5, .w-4.h-4 {
+  cursor: pointer !important;
+}
+
+/* Fix for Lucide React icons */
+svg {
+  cursor: inherit !important;
+}
+
+/* Fix for form labels - should not have text cursor */
+label {
+  cursor: default !important;
+}
+
+/* Fix for clickable cards and containers */
+.bg-blue-600,
+.bg-green-600,
+.bg-red-600,
+.bg-gray-600,
+.rounded-lg {
+  cursor: default !important;
+}
+
+/* 10. APPLICATION-SPECIFIC PATTERNS - Exam Portal specific elements */
+
+/* 10a. NAVIGATION ELEMENTS */
+.sidebar-item,
+.nav-item,
+.menu-link,
+.breadcrumb-item,
+.tab-item,
+.pagination-item,
+.step-item {
+  cursor: pointer !important;
+}
+
+/* 10b. CARD ELEMENTS */
+.card.clickable,
+.info-card,
+.stat-card,
+.dashboard-card,
+.result-card,
+.exam-card,
+.student-card {
+  cursor: pointer !important;
+}
+
+/* 10c. FORM ELEMENTS */
+.form-group.clickable,
+.checkbox-group,
+.radio-group,
+.file-upload,
+.image-upload,
+.drag-drop {
+  cursor: pointer !important;
+}
+
+/* 10d. MODAL AND OVERLAY ELEMENTS */
+.modal-close,
+.overlay-close,
+.popup-close,
+.dialog-close,
+.tooltip-trigger {
+  cursor: pointer !important;
+}
+
+/* 10e. EXAM-SPECIFIC ELEMENTS */
+.question-option,
+.answer-choice,
+.exam-action,
+.result-action,
+.certificate-action,
+.proctoring-control {
+  cursor: pointer !important;
+}
+
+/* 11. UTILITY CLASSES - Manual overrides */
+.no-text-cursor {
+  cursor: default !important;
+  user-select: none !important;
+}
+
+.text-cursor {
+  cursor: text !important;
+  user-select: text !important;
+}
+
+.pointer-cursor {
+  cursor: pointer !important;
+}
+
+.grab-cursor {
+  cursor: grab !important;
+}
+
+.grabbing-cursor {
+  cursor: grabbing !important;
+}
+
+/* 12. CATCH-ALL PATTERNS - Last resort for missed elements */
+*[class*="hover:"],
+*[class*="focus:"],
+*[class*="active:"],
+*[class*="transition"],
+*[class*="clickable"],
+*[class*="interactive"],
+*[class*="button"],
+*[class*="link"],
+*[onclick]:not(input):not(textarea) {
+  cursor: pointer !important;
+}
+
+/* 9. TABLE ELEMENTS - Comprehensive table cursor fixes */
+
+/* 9a. HTML TABLE ELEMENTS */
+table tr:not(.no-cursor),
+tbody tr:not(.no-cursor),
+thead tr.clickable,
+tfoot tr.clickable,
+tr.cursor-pointer,
+tr.clickable-row,
+tr.table-row,
+.table-row {
+  cursor: pointer !important;
+}
+
+/* 9b. TABLE CELLS - Clickable cells */
+td.cursor-pointer,
+th.cursor-pointer,
+td.clickable,
+th.clickable,
+.clickable-cell,
+.table-cell-clickable {
+  cursor: pointer !important;
+}
+
+/* 9c. TABLE HOVER STATES */
+tr:hover:not(.no-hover),
+tr.hover\:bg-gray-50:hover,
+tr.hover\:bg-blue-50:hover,
+tr.hover\:bg-green-50:hover,
+tr.hover\:bg-gray-100:hover,
+tbody tr:hover,
+.table-hover tr:hover {
+  cursor: pointer !important;
+}
+
+/* 9d. TABLE STYLING PATTERNS */
+.table-striped tr:not(.no-cursor),
+.divide-y tr:not(.no-cursor),
+.border-b tr:not(.no-cursor),
+.border-t tr:not(.no-cursor),
+table.shadow tr,
+.table-container tr,
+.data-table tr {
+  cursor: pointer !important;
+}
+
+/* 9e. ADMIN TABLE PATTERNS */
+.admin-table tr,
+.management-table tr,
+.list-table tr,
+.data-grid tr,
+.results-table tr {
+  cursor: pointer !important;
+}
+
+/* 9f. MODERN TABLE LAYOUTS (div-based) */
+.table-div .table-row,
+.grid-table .grid-row,
+.flex-table .flex-row,
+.virtual-table .virtual-row,
+[role="row"]:not(.no-cursor),
+[role="gridcell"].clickable,
+[role="columnheader"].clickable {
+  cursor: pointer !important;
+}
+
+/* 9g. RESPONSIVE TABLE PATTERNS */
+.responsive-table tr,
+.mobile-table .table-item,
+.card-table .card-row {
+  cursor: pointer !important;
+}
+
+@media (max-width: 768px) {
+  .table-responsive tr {
+    cursor: pointer !important;
+  }
+}

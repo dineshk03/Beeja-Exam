@@ -72,18 +72,67 @@ function Dashboard() {
   }, [fetchExams, fetchSchedules]);
 
   const isExamScheduled = useCallback((examId) => {
+    const matchingSchedules = schedules.filter(schedule => schedule.exam?._id === examId);
+    
+    if (matchingSchedules.length > 0) {
+      console.log(`🔍 Checking schedule for exam ${examId}:`, matchingSchedules.map(s => ({
+        status: s.status,
+        scheduledDate: s.scheduledDate,
+        isDateValid: new Date(s.scheduledDate) >= new Date(),
+        currentDate: new Date().toISOString(),
+        scheduleDate: new Date(s.scheduledDate).toISOString()
+      })));
+    }
+    
     return schedules.some(schedule => 
       schedule.exam?._id === examId && 
-      schedule.status === 'scheduled' &&
-      new Date(schedule.scheduledDate) >= new Date()
+      schedule.status === 'scheduled'
+      // Removed date check - show as scheduled if it has any active schedule
     );
   }, [schedules]);
 
   const getScheduleForExam = useCallback((examId) => {
-    return schedules.find(schedule => 
+    const examSchedules = schedules.filter(schedule => 
       schedule.exam?._id === examId && 
       schedule.status === 'scheduled'
     );
+    
+    if (examSchedules.length === 0) return null;
+    if (examSchedules.length === 1) return examSchedules[0];
+    
+    // Multiple schedules - find the most relevant one
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+    const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+    
+    // Filter to today's schedules only
+    const todaySchedules = examSchedules.filter(schedule => {
+      const scheduleDate = new Date(schedule.scheduledDate).toISOString().split('T')[0];
+      return scheduleDate === currentDate;
+    });
+    
+    if (todaySchedules.length === 0) {
+      // No schedules today, return the next upcoming one
+      return examSchedules.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate))[0];
+    }
+    
+    // Find currently active schedule
+    const activeSchedule = todaySchedules.find(schedule => 
+      currentTime >= schedule.startTime && currentTime <= schedule.endTime
+    );
+    
+    if (activeSchedule) return activeSchedule;
+    
+    // No active schedule, find the next upcoming one today
+    const upcomingSchedule = todaySchedules
+      .filter(schedule => currentTime < schedule.startTime)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
+    
+    if (upcomingSchedule) return upcomingSchedule;
+    
+    // All schedules today have passed, return the most recent one
+    return todaySchedules
+      .sort((a, b) => b.startTime.localeCompare(a.startTime))[0];
   }, [schedules]);
 
   const displayedExams = useMemo(() => {
@@ -102,34 +151,41 @@ function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ background: '#eff6ff' }}>
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e40af 50%, #1d4ed8 100%)' }} className="shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
-              <BookOpen className="w-8 h-8 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900">Exam Portal</h1>
+              <img src="/beeja-logo.png" alt="Beeja Academy" className="w-9 h-9 rounded-xl object-contain bg-white/10 border border-white/20" />
+              <h1 className="text-xl font-bold text-white">Beeja Academy</h1>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               {hasVisibleResults && (
                 <button
                   onClick={() => navigate('/my-results')}
-                  className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-blue-600 transition-colors"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-blue-200 hover:text-white hover:bg-white/10 transition-colors text-sm font-medium"
                 >
-                  <TrendingUp className="w-5 h-5" />
+                  <TrendingUp className="w-4 h-4" />
                   <span className="hidden sm:inline">My Results</span>
                 </button>
               )}
-              <div className="flex items-center space-x-2 text-gray-700">
-                <User className="w-5 h-5" />
-                <span className="font-medium hidden sm:inline">{user?.name}</span>
+              <button
+                onClick={() => navigate('/my-certificates')}
+                className="flex items-center space-x-2 px-3 py-2 rounded-lg text-blue-200 hover:text-white hover:bg-white/10 transition-colors text-sm font-medium"
+              >
+                <Award className="w-4 h-4" />
+                <span className="hidden sm:inline">Certificates</span>
+              </button>
+              <div className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-white/10 border border-white/10">
+                <User className="w-4 h-4 text-blue-300" />
+                <span className="font-medium text-white text-sm hidden sm:inline">{user?.name}</span>
               </div>
               <button
                 onClick={handleLogout}
-                className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-red-600 transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 rounded-lg text-blue-200 hover:text-red-300 hover:bg-red-500/10 transition-colors text-sm font-medium"
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
@@ -138,7 +194,7 @@ function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-12">
         {/* Exam Results Analysis */}
         {showResults && lastExamResult && (
           <div className="mb-8 bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-xl p-6 shadow-lg">
@@ -218,7 +274,7 @@ function Dashboard() {
 
         {/* Quick Stats Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <div className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <div className="flex items-center justify-between mb-2">
               <Trophy className="w-8 h-8 opacity-80" />
               <div className="text-3xl font-bold">{exams.length}</div>
@@ -251,12 +307,14 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2 flex items-center space-x-3">
-            <BookOpen className="w-8 h-8 text-blue-600" />
-            <span>Available Exams</span>
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-1 flex items-center gap-3">
+            <span className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-blue-600" />
+            </span>
+            Available Exams
           </h2>
-          <p className="text-gray-600">Select an exam to begin your assessment</p>
+          <p className="text-gray-500 text-sm ml-11">Select an exam to begin your assessment</p>
         </div>
 
         {/* View Mode Toggle */}
@@ -389,8 +447,12 @@ function Dashboard() {
                     </div>
                     <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-3 rounded-lg text-center border border-purple-200 hover:shadow-md transition-shadow">
                       <FileText className="w-5 h-5 mx-auto mb-1 text-purple-600" />
-                      <div className="text-lg font-bold text-purple-900">{exam.totalQuestions || 0}</div>
-                      <div className="text-xs text-purple-700">questions</div>
+                      <div className="text-lg font-bold text-purple-900">
+                        {exam.requiresQPSetup ? '⚠️' : (exam.totalQuestions || 0)}
+                      </div>
+                      <div className="text-xs text-purple-700">
+                        {exam.requiresQPSetup ? 'Setup Required' : 'total questions'}
+                      </div>
                     </div>
                     <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg text-center border border-green-200 hover:shadow-md transition-shadow">
                       <Target className="w-5 h-5 mx-auto mb-1 text-green-600" />
@@ -399,18 +461,25 @@ function Dashboard() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => navigate(`/exam/${exam._id}/pre-checks`)}
-                    className={`w-full py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center space-x-2 ${
-                      isHovered 
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg transform scale-105' 
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                  >
-                    <Play className="w-5 h-5" />
-                    <span>Start Exam</span>
-                    <ChevronRight className={`w-5 h-5 transition-transform ${isHovered ? 'translate-x-1' : ''}`} />
-                  </button>
+                  {exam.requiresQPSetup ? (
+                    <div className="w-full py-3 rounded-xl font-bold bg-gray-300 text-gray-600 flex items-center justify-center space-x-2 cursor-not-allowed">
+                      <AlertCircle className="w-5 h-5" />
+                      <span>Question Papers Required</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => navigate(`/exam/${exam._id}/pre-checks`)}
+                      className={`w-full py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center space-x-2 ${
+                        isHovered 
+                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg transform scale-105' 
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      <Play className="w-5 h-5" />
+                      <span>Start Exam</span>
+                      <ChevronRight className={`w-5 h-5 transition-transform ${isHovered ? 'translate-x-1' : ''}`} />
+                    </button>
+                  )}
                 </div>
               </div>
               );
@@ -419,23 +488,22 @@ function Dashboard() {
         )}
 
         {!loading && !error && displayedExams.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-lg shadow-sm">
-            <div className="bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="w-10 h-10 text-gray-400" />
+          <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100">
+            <div className="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="w-10 h-10 text-blue-300" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               {viewMode === 'scheduled' ? 'No scheduled exams' : 'No exams available'}
             </h3>
-            <p className="text-gray-600 mb-4">
-              {viewMode === 'scheduled' 
-                ? 'You don\'t have any scheduled exams at the moment.' 
-                : 'There are no exams available for you right now.'
-              }
+            <p className="text-gray-500 text-sm mb-4">
+              {viewMode === 'scheduled'
+                ? "You don't have any scheduled exams at the moment."
+                : 'There are no exams available for you right now.'}
             </p>
             {viewMode === 'scheduled' && (
               <button
                 onClick={() => setViewMode('all')}
-                className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="mt-2 px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium"
               >
                 View All Exams
               </button>

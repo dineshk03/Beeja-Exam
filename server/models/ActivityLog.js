@@ -13,6 +13,7 @@ const activityLogSchema = new mongoose.Schema({
       'login',
       'logout',
       'register',
+      'user_update',
       'exam_start',
       'exam_submit',
       'exam_create',

@@ -8,6 +8,7 @@ import Schedule from '../models/Schedule.js';
 import ScheduledReport from '../models/ScheduledReport.js';
 import ReportHistory from '../models/ReportHistory.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
+import { checkPermission, requireAnyAdminPermission } from '../middleware/permissions.js';
 
 const router = express.Router();
 
@@ -23,12 +24,13 @@ const buildDateFilter = (startDate, endDate) => {
 };
 
 // Student-Wise Report
-router.get('/admin/reports/student_wise', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/reports/student_wise', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const { startDate, endDate, examId, batchId } = req.query;
     
     const sessionFilter = buildDateFilter(startDate, endDate);
-    sessionFilter.status = 'completed';
+    // Include both submitted and completed sessions for reports
+    sessionFilter.status = { $in: ['submitted', 'completed'] };
     if (examId && examId !== 'all') sessionFilter.exam = examId;
 
     let students = await User.find({ role: 'student' });
@@ -72,12 +74,13 @@ router.get('/admin/reports/student_wise', authenticateToken, requireAdmin, async
 });
 
 // Batch-Wise Report
-router.get('/admin/reports/batch_wise', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/reports/batch_wise', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const { startDate, endDate, examId } = req.query;
     
     const sessionFilter = buildDateFilter(startDate, endDate);
-    sessionFilter.status = 'completed';
+    // Include both submitted and completed sessions for reports
+    sessionFilter.status = { $in: ['submitted', 'completed'] };
     if (examId && examId !== 'all') sessionFilter.exam = examId;
 
     const students = await User.find({ role: 'student' });
@@ -127,7 +130,7 @@ router.get('/admin/reports/batch_wise', authenticateToken, requireAdmin, async (
 });
 
 // Exam-Wise Report
-router.get('/admin/reports/exam_wise', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/reports/exam_wise', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const { startDate, endDate, examId, batchId } = req.query;
     
@@ -139,7 +142,8 @@ router.get('/admin/reports/exam_wise', authenticateToken, requireAdmin, async (r
     const reportData = await Promise.all(exams.map(async (exam) => {
       const sessionFilter = buildDateFilter(startDate, endDate);
       sessionFilter.exam = exam._id;
-      sessionFilter.status = 'completed';
+      // Include both submitted and completed sessions for reports
+    sessionFilter.status = { $in: ['submitted', 'completed'] };
 
       let sessions = await ExamSession.find(sessionFilter).populate('student', 'batch');
       
@@ -174,12 +178,13 @@ router.get('/admin/reports/exam_wise', authenticateToken, requireAdmin, async (r
 });
 
 // Pass/Fail Report
-router.get('/admin/reports/pass_fail', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/reports/pass_fail', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const { startDate, endDate, examId, batchId, status } = req.query;
     
     const sessionFilter = buildDateFilter(startDate, endDate);
-    sessionFilter.status = 'completed';
+    // Include both submitted and completed sessions for reports
+    sessionFilter.status = { $in: ['submitted', 'completed'] };
     if (examId && examId !== 'all') sessionFilter.exam = examId;
     
     // Filter by pass/fail status
@@ -212,7 +217,7 @@ router.get('/admin/reports/pass_fail', authenticateToken, requireAdmin, async (r
 });
 
 // Student Performance Report
-router.get('/admin/reports/student_performance', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/reports/student_performance', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const { startDate, endDate, examId, batchId } = req.query;
     
@@ -228,7 +233,7 @@ router.get('/admin/reports/student_performance', authenticateToken, requireAdmin
       const sessions = await ExamSession.find({
         ...sessionFilter,
         student: student._id,
-        status: 'completed'
+        status: { $in: ['submitted', 'completed'] }
       });
 
       const examsTaken = sessions.length;
@@ -263,7 +268,7 @@ router.get('/admin/reports/student_performance', authenticateToken, requireAdmin
 });
 
 // Exam Summary Report
-router.get('/admin/reports/exam_summary', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/reports/exam_summary', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const { startDate, endDate, examId } = req.query;
     
@@ -275,7 +280,8 @@ router.get('/admin/reports/exam_summary', authenticateToken, requireAdmin, async
     const reportData = await Promise.all(exams.map(async (exam) => {
       const sessionFilter = buildDateFilter(startDate, endDate);
       sessionFilter.exam = exam._id;
-      sessionFilter.status = 'completed';
+      // Include both submitted and completed sessions for reports
+    sessionFilter.status = { $in: ['submitted', 'completed'] };
 
       const sessions = await ExamSession.find(sessionFilter);
       
@@ -305,7 +311,7 @@ router.get('/admin/reports/exam_summary', authenticateToken, requireAdmin, async
 });
 
 // Batch Analysis Report
-router.get('/admin/reports/batch_analysis', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/reports/batch_analysis', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const { startDate, endDate, batchId } = req.query;
     
@@ -320,7 +326,8 @@ router.get('/admin/reports/batch_analysis', authenticateToken, requireAdmin, asy
 
       const sessionFilter = buildDateFilter(startDate, endDate);
       sessionFilter.student = { $in: studentIds };
-      sessionFilter.status = 'completed';
+      // Include both submitted and completed sessions for reports
+      sessionFilter.status = { $in: ['submitted', 'completed'] };
 
       const sessions = await ExamSession.find(sessionFilter);
       
@@ -350,7 +357,7 @@ router.get('/admin/reports/batch_analysis', authenticateToken, requireAdmin, asy
 });
 
 // Attendance Report
-router.get('/admin/reports/attendance', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/reports/attendance', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const { startDate, endDate, batchId } = req.query;
     
@@ -392,7 +399,7 @@ router.get('/admin/reports/attendance', authenticateToken, requireAdmin, async (
 });
 
 // Proctoring Report
-router.get('/admin/reports/proctoring', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/reports/proctoring', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const { startDate, endDate, examId } = req.query;
     
@@ -423,7 +430,7 @@ router.get('/admin/reports/proctoring', authenticateToken, requireAdmin, async (
 });
 
 // Time Analysis Report
-router.get('/admin/reports/time_analysis', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/reports/time_analysis', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const { startDate, endDate, examId, batchId } = req.query;
     
@@ -435,7 +442,8 @@ router.get('/admin/reports/time_analysis', authenticateToken, requireAdmin, asyn
     const reportData = await Promise.all(students.map(async (student) => {
       const sessionFilter = buildDateFilter(startDate, endDate);
       sessionFilter.student = student._id;
-      sessionFilter.status = 'completed';
+      // Include both submitted and completed sessions for reports
+      sessionFilter.status = { $in: ['submitted', 'completed'] };
       if (examId && examId !== 'all') sessionFilter.exam = examId;
 
       const sessions = await ExamSession.find(sessionFilter).populate('exam');
@@ -471,12 +479,13 @@ router.get('/admin/reports/time_analysis', authenticateToken, requireAdmin, asyn
 });
 
 // Question Analysis Report
-router.get('/admin/reports/question_analysis', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/reports/question_analysis', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const { startDate, endDate, examId } = req.query;
     
     const sessionFilter = buildDateFilter(startDate, endDate);
-    sessionFilter.status = 'completed';
+    // Include both submitted and completed sessions for reports
+    sessionFilter.status = { $in: ['submitted', 'completed'] };
     if (examId && examId !== 'all') sessionFilter.exam = examId;
 
     const sessions = await ExamSession.find(sessionFilter);
@@ -532,7 +541,7 @@ router.get('/admin/reports/question_analysis', authenticateToken, requireAdmin, 
 });
 
 // Comprehensive Report
-router.get('/admin/reports/comprehensive', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/reports/comprehensive', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
@@ -570,10 +579,54 @@ router.get('/admin/reports/comprehensive', authenticateToken, requireAdmin, asyn
   }
 });
 
+// CSV Export helper
+function toCSV(rows) {
+  if (!rows || rows.length === 0) return '';
+  const headers = Object.keys(rows[0]);
+  const lines = [
+    headers.join(','),
+    ...rows.map(row =>
+      headers.map(h => {
+        const val = row[h] == null ? '' : String(row[h]);
+        return val.includes(',') || val.includes('"') || val.includes('\n')
+          ? `"${val.replace(/"/g, '""')}"`
+          : val;
+      }).join(',')
+    )
+  ];
+  return lines.join('\r\n');
+}
+
+// Generic CSV export endpoint — reuses existing report logic via an internal fetch
+router.get('/admin/reports/:type/export', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
+  try {
+    const { type } = req.params;
+    const validTypes = ['student_wise', 'batch_wise', 'exam_wise', 'pass_fail', 'student_performance', 'exam_summary', 'batch_analysis', 'attendance', 'proctoring', 'time_analysis', 'question_analysis'];
+    if (!validTypes.includes(type)) return res.status(400).json({ message: 'Invalid report type' });
+
+    const queryString = new URLSearchParams(req.query).toString();
+    const internalUrl = `${req.protocol}://${req.get('host')}/api/admin/reports/${type}${queryString ? '?' + queryString : ''}`;
+    const internalRes = await fetch(internalUrl, {
+      headers: { Authorization: req.headers.authorization }
+    });
+    const data = await internalRes.json();
+
+    if (!Array.isArray(data)) return res.status(500).json({ message: 'Could not generate report data' });
+
+    const csv = toCSV(data);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${type}-report-${Date.now()}.csv"`);
+    res.send(csv);
+  } catch (error) {
+    console.error('Error exporting CSV:', error);
+    res.status(500).json({ message: 'Error exporting report', error: error.message });
+  }
+});
+
 // Scheduled Reports Management
 
 // Get all scheduled reports
-router.get('/admin/scheduled-reports', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/scheduled-reports', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const scheduledReports = await ScheduledReport.find()
       .populate('createdBy', 'name email')
@@ -587,7 +640,7 @@ router.get('/admin/scheduled-reports', authenticateToken, requireAdmin, async (r
 });
 
 // Create scheduled report
-router.post('/admin/scheduled-reports', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/admin/scheduled-reports', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const scheduledReport = new ScheduledReport({
       ...req.body,
@@ -603,7 +656,7 @@ router.post('/admin/scheduled-reports', authenticateToken, requireAdmin, async (
 });
 
 // Update scheduled report
-router.put('/admin/scheduled-reports/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.put('/admin/scheduled-reports/:id', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const scheduledReport = await ScheduledReport.findByIdAndUpdate(
       req.params.id,
@@ -623,7 +676,7 @@ router.put('/admin/scheduled-reports/:id', authenticateToken, requireAdmin, asyn
 });
 
 // Delete scheduled report
-router.delete('/admin/scheduled-reports/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.delete('/admin/scheduled-reports/:id', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const scheduledReport = await ScheduledReport.findByIdAndDelete(req.params.id);
     
@@ -641,7 +694,7 @@ router.delete('/admin/scheduled-reports/:id', authenticateToken, requireAdmin, a
 // Report History Management
 
 // Get report history
-router.get('/admin/report-history', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/admin/report-history', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const { limit = 50, skip = 0 } = req.query;
     
@@ -666,7 +719,7 @@ router.get('/admin/report-history', authenticateToken, requireAdmin, async (req,
 });
 
 // Create report history entry
-router.post('/admin/report-history', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/admin/report-history', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const historyEntry = new ReportHistory({
       ...req.body,
@@ -682,7 +735,7 @@ router.post('/admin/report-history', authenticateToken, requireAdmin, async (req
 });
 
 // Delete report history entry
-router.delete('/admin/report-history/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.delete('/admin/report-history/:id', authenticateToken, requireAnyAdminPermission, checkPermission('reports', 'read'), async (req, res) => {
   try {
     const historyEntry = await ReportHistory.findByIdAndDelete(req.params.id);
     

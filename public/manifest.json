@@ -1,7 +1,7 @@
 {
-  "name": "Exam Management System",
-  "short_name": "ExamSystem",
-  "description": "A comprehensive exam management system with real-time proctoring and analytics",
+  "name": "Beeja Academy - Exam Portal",
+  "short_name": "Beeja Academy",
+  "description": "Beeja Academy's exam management system with real-time proctoring and analytics",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

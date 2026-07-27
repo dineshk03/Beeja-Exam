@@ -1,5 +1,5 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Description: 'TCS iON Exam System - Complete AWS Infrastructure'
+AWSTemplateFormatVersion: '2025-09-09'
+Description: 'Exam System - Complete AWS Infrastructure'
 
 Parameters:
   ProjectName:

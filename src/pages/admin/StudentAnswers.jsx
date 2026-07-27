@@ -174,14 +174,14 @@ const StudentAnswers = () => {
 
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-3 rounded-lg">
-              <FileText className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Student Answers Review</h1>
-              <p className="text-gray-600 mt-1">View detailed answers and question-by-question analysis</p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1">
+              <span className="w-9 h-9 rounded-xl bg-cyan-100 flex items-center justify-center">
+                <FileText className="w-5 h-5 text-cyan-600" />
+              </span>
+              Student Answers Review
+            </h1>
+            <p className="text-gray-500 text-sm ml-11">View detailed answers and question-by-question analysis</p>
           </div>
         </div>
 
@@ -250,7 +250,7 @@ const StudentAnswers = () => {
                     onClick={() => fetchSessionDetails(session._id)}
                     className={`p-4 cursor-pointer transition-all duration-200 border-l-4 ${
                       selectedSession === session._id
-                        ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-600'
+                        ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-600'
                         : 'border-transparent hover:bg-gray-50 hover:border-gray-300'
                     }`}
                   >
@@ -320,7 +320,7 @@ const StudentAnswers = () => {
               ) : (
                 <div className="p-6 space-y-6">
                   {/* Summary */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4">
+                  <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg p-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-600">Student</p>

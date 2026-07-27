@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Camera, Mic, Monitor, Wifi, CheckCircle, XCircle, AlertTriangle, Upload, RefreshCw, Settings, Eye, EyeOff } from 'lucide-react';
-import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import api from '../api/axios';
 
@@ -58,6 +57,9 @@ const PreExamChecks = () => {
         requireWebcam: response.data.requireWebcam,
         requireMicrophone: response.data.requireMicrophone,
         requireIdentityVerification: response.data.requireIdentityVerification,
+        requireScreenRecording: response.data.requireScreenRecording,
+        requireBrowserLockdown: response.data.requireBrowserLockdown,
+        scheduleProctorSettings: response.data.scheduleProctorSettings,
         allowMobileDevices: response.data.allowMobileDevices
       });
     } catch (error) {
@@ -263,39 +265,33 @@ const PreExamChecks = () => {
     setIsSubmitting(true);
     try {
       // Submit system check
-      await axios.post(
-        'http://localhost:5000/api/verification/system-check',
-        {
-          checkType: 'pre_exam',
-          systemInfo: {
-            browser: navigator.userAgent,
-            screenResolution: `${window.screen.width}x${window.screen.height}`,
-            userAgent: navigator.userAgent,
-          },
-          checks: {
-            webcam: {
-              available: checks.webcam.status === 'passed',
-              working: checks.webcam.status === 'passed',
-              permission: 'granted',
-            },
-            microphone: {
-              available: checks.microphone.status === 'passed',
-              working: checks.microphone.status === 'passed',
-              permission: 'granted',
-            },
-            internet: {
-              stable: checks.internet.status === 'passed',
-            },
-            browser: {
-              compatible: checks.browser.status === 'passed',
-            },
-          },
-          overallStatus: allChecksPassed ? 'passed' : 'passed_with_warnings',
+      await api.post('/verification/system-check', {
+        checkType: 'pre_exam',
+        systemInfo: {
+          browser: navigator.userAgent,
+          screenResolution: `${window.screen.width}x${window.screen.height}`,
+          userAgent: navigator.userAgent,
         },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+        checks: {
+          webcam: {
+            available: checks.webcam.status === 'passed',
+            working: checks.webcam.status === 'passed',
+            permission: 'granted',
+          },
+          microphone: {
+            available: checks.microphone.status === 'passed',
+            working: checks.microphone.status === 'passed',
+            permission: 'granted',
+          },
+          internet: {
+            stable: checks.internet.status === 'passed',
+          },
+          browser: {
+            compatible: checks.browser.status === 'passed',
+          },
+        },
+        overallStatus: allChecksPassed ? 'passed' : 'passed_with_warnings',
+      });
 
       // Submit identity verification only if required
       if (examSettings?.requireIdentityVerification) {
@@ -308,17 +304,11 @@ const PreExamChecks = () => {
 
           console.log('✅ Images processed successfully, submitting to server...');
 
-          await axios.post(
-            'http://localhost:5000/api/verification/identity',
-            {
-              verificationType: identityVerification.documentType,
-              documentImageUrl: documentBase64,
-              faceImageUrl: faceBase64,
-            },
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
+          await api.post('/verification/identity', {
+            verificationType: identityVerification.documentType,
+            documentImageUrl: documentBase64,
+            faceImageUrl: faceBase64,
+          });
         } catch (imageError) {
           console.error('❌ Error processing images:', imageError);
           throw new Error(`Image processing failed: ${imageError.message}`);
@@ -471,9 +461,9 @@ const PreExamChecks = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen py-8" style={{ background: '#eff6ff' }}>
       <div className="max-w-4xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow-md p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Pre-Exam System Checks</h1>
           <p className="text-gray-600 mb-8">
             Please complete all system checks and identity verification before starting your exam.

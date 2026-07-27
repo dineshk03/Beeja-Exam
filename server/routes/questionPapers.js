@@ -45,11 +45,11 @@ router.get('/question-papers/:id', authenticateToken, requireAdmin, async (req, 
 router.post('/exams/:examId/question-papers', authenticateToken, requireAdmin, async (req, res) => {
   try {
     console.log('Creating question paper with data:', req.body);
-    const { name, code, description, questions, duration } = req.body;
+    const { name, code, description, questions } = req.body;
     
     // Validate required fields
-    if (!name || !code || !duration) {
-      return res.status(400).json({ error: 'Name, code, and duration are required' });
+    if (!name || !code) {
+      return res.status(400).json({ error: 'Name and code are required' });
     }
     
     if (!questions || !Array.isArray(questions) || questions.length === 0) {
@@ -68,7 +68,6 @@ router.post('/exams/:examId/question-papers', authenticateToken, requireAdmin, a
       exam: req.params.examId,
       description,
       questions,
-      duration,
       createdBy: req.user.id
     });
     
@@ -98,7 +97,7 @@ router.post('/exams/:examId/question-papers', authenticateToken, requireAdmin, a
 // Update question paper
 router.put('/question-papers/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { name, description, questions, duration, isActive } = req.body;
+    const { name, description, questions, isActive } = req.body;
     
     const questionPaper = await QuestionPaper.findByIdAndUpdate(
       req.params.id,
@@ -106,7 +105,6 @@ router.put('/question-papers/:id', authenticateToken, requireAdmin, async (req, 
         name,
         description,
         questions,
-        duration,
         isActive,
         updatedAt: new Date()
       },

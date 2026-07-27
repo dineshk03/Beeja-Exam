@@ -984,7 +984,7 @@ function EnhancedTCSExamInterface() {
                 
                 if (hasAnswer && isFlagged) {
                   bgColor = '#f3e8ff'; // Purple - Answered & Flagged
-                  textColor = '#7c3aed';
+                  textColor = '#2563eb';
                   borderColor = '#d8b4fe';
                   status = '✅🏁';
                 } else if (hasAnswer) {
