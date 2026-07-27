@@ -31,8 +31,8 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com', 'https://www.yourdomain.com'] // Replace with your actual domain
+  origin: process.env.NODE_ENV === 'production'
+    ? (process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://65.2.57.80'])
     : ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true,
   optionsSuccessStatus: 200
