@@ -1885,7 +1885,16 @@ function EnhancedTCSExamInterface() {
       <SecurityWarningModal
         isOpen={!!showSecurityWarning}
         message={securityWarningMessage}
-        onClose={() => setShowSecurityWarning(false)}
+        onClose={async () => {
+          const wasAutoSubmit = showSecurityWarning === 'auto-submit';
+          setShowSecurityWarning(false);
+          // Fullscreen exit is what triggers most violations, and it stays
+          // exited until re-requested — this click is the user gesture
+          // browsers require to allow that, so re-lock immediately.
+          if (examStarted && !wasAutoSubmit) {
+            await enterFullscreen();
+          }
+        }}
         isAutoSubmit={showSecurityWarning === 'auto-submit'}
       />
 
