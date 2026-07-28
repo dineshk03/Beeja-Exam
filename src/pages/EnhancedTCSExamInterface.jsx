@@ -376,6 +376,7 @@ function EnhancedTCSExamInterface() {
     addPhotoCapture,
     setInitialPhotoTaken,
     clearAnswers,
+    resetExam,
   } = useExamStore();
 
   // Get current question with logging
@@ -569,6 +570,35 @@ function EnhancedTCSExamInterface() {
       return () => clearInterval(interval);
     }
   }, [currentExam, initialPhotoTaken]);
+
+  // Poll session status so an admin terminating this session from Live Exam
+  // Monitor actually kicks the student out — without this, the backend
+  // correctly marks the session terminated but the student's screen keeps
+  // running uninterrupted since answer-save failures were only logged to
+  // the console, never surfaced.
+  useEffect(() => {
+    if (!examStarted || !sessionId) return;
+
+    const checkSessionStatus = async () => {
+      try {
+        const response = await api.get(`/exams/sessions/${sessionId}/status`);
+        if (response.data.status === 'terminated') {
+          alert('Your exam session has been terminated by an administrator.');
+          resetExam();
+          navigate('/dashboard');
+        } else if (response.data.status === 'expired') {
+          alert('Your exam session has expired.');
+          resetExam();
+          navigate('/dashboard');
+        }
+      } catch (error) {
+        console.error('Failed to check session status:', error);
+      }
+    };
+
+    const interval = setInterval(checkSessionStatus, 10000);
+    return () => clearInterval(interval);
+  }, [examStarted, sessionId, navigate, resetExam]);
 
   // Initialize webcam and microphone monitoring
   useEffect(() => {
