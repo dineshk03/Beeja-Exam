@@ -396,6 +396,52 @@ router.post('/questions', authenticateToken, requireAnyAdminPermission, checkPer
   }
 });
 
+// Bulk create questions in a single request/DB round-trip — used by the
+// bulk import UI so a large import doesn't fire dozens of individual
+// requests (which trips nginx's per-IP rate limit in production).
+router.post('/questions/bulk-create', authenticateToken, requireAnyAdminPermission, checkPermission('questionManagement', 'create'), async (req, res) => {
+  try {
+    const { questions } = req.body;
+
+    if (!questions || !Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ error: 'questions array is required' });
+    }
+
+    // Validate each document ourselves before inserting: Mongoose's
+    // insertMany({ordered:false}) silently drops documents that fail
+    // schema validation with no error surfaced at all, so we can't rely
+    // on it to report failures — validateSync() gives a real per-document
+    // error we can report back.
+    const validDocs = [];
+    const failures = [];
+    questions.forEach(q => {
+      const instance = new Question({ ...q, createdBy: req.user.id });
+      const validationError = instance.validateSync();
+      if (validationError) {
+        failures.push({ question: (q.question || '').slice(0, 60), error: validationError.message });
+      } else {
+        validDocs.push(instance);
+      }
+    });
+
+    let createdIds = [];
+    if (validDocs.length > 0) {
+      const created = await Question.insertMany(validDocs, { ordered: false });
+      createdIds = created.map(q => q._id);
+    }
+
+    await logActivity(req.user.id, 'question_bulk_create', 'question', null, {
+      created: createdIds.length,
+      failed: failures.length
+    }, req);
+
+    res.status(201).json({ createdIds, failures });
+  } catch (error) {
+    console.error('Error bulk creating questions:', error);
+    res.status(500).json({ error: 'Failed to bulk create questions' });
+  }
+});
+
 // Update question
 router.put('/questions/:id', authenticateToken, requireAnyAdminPermission, checkPermission('questionManagement', 'update'), async (req, res) => {
   try {
