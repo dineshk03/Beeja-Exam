@@ -164,23 +164,29 @@ function BulkQuestionImport() {
         return;
       }
 
-      // Import each question independently so one bad row doesn't hide the
-      // results of the others (they've already been written to the DB by
-      // the time any single request fails).
-      const results = await Promise.allSettled(
-        questionsToImport.map(q => api.post('/admin/questions', q))
-      );
-
+      // Import in small concurrent batches rather than firing every request
+      // at once — a large import (dozens+ questions) blasted in parallel
+      // trips the nginx rate limiter in production (burst=20 on /api/),
+      // which silently 503s most of the requests before they ever reach
+      // the server's own error handling.
+      const BATCH_SIZE = 10;
       const createdQuestionIds = [];
       const failures = [];
-      results.forEach((result, i) => {
-        if (result.status === 'fulfilled') {
-          createdQuestionIds.push(result.value.data._id);
-        } else {
-          const reason = result.reason?.response?.data?.error || result.reason?.message || 'Unknown error';
-          failures.push(`"${questionsToImport[i].question.slice(0, 60)}": ${reason}`);
-        }
-      });
+
+      for (let i = 0; i < questionsToImport.length; i += BATCH_SIZE) {
+        const batch = questionsToImport.slice(i, i + BATCH_SIZE);
+        const results = await Promise.allSettled(
+          batch.map(q => api.post('/admin/questions', q))
+        );
+        results.forEach((result, j) => {
+          if (result.status === 'fulfilled') {
+            createdQuestionIds.push(result.value.data._id);
+          } else {
+            const reason = result.reason?.response?.data?.error || result.reason?.message || 'Unknown error';
+            failures.push(`"${batch[j].question.slice(0, 60)}": ${reason}`);
+          }
+        });
+      }
 
       if (selectedExam && createdQuestionIds.length > 0) {
         await api.post(`/admin/exams/${selectedExam}/questions/bulk`, {
