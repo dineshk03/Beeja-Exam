@@ -213,6 +213,7 @@ router.post('/exams', authenticateToken, requireAnyAdminPermission, checkPermiss
   try {
     const {
       title, description, duration, passingScore, category, startDate, endDate, allowedAttempts,
+      questionsToDisplay,
       // Advanced exam features
       showCalculator, showReviewScreen, showQuestionAnalysis, showResultsToStudents, requirePhotoCapture, photoCaptureInterval,
       enableWebcam, enableMicrophone, instructions, rules,
@@ -229,6 +230,7 @@ router.post('/exams', authenticateToken, requireAnyAdminPermission, checkPermiss
       startDate,
       endDate,
       allowedAttempts: allowedAttempts || 1,
+      questionsToDisplay: questionsToDisplay === '' || questionsToDisplay === undefined ? null : questionsToDisplay,
       // Advanced features
       showCalculator: showCalculator || false,
       showReviewScreen: showReviewScreen || false,
@@ -270,6 +272,7 @@ router.put('/exams/:id', authenticateToken, requireAnyAdminPermission, checkPerm
 
     const {
       title, description, duration, passingScore, category, isActive, startDate, endDate, allowedAttempts,
+      questionsToDisplay,
       // Advanced exam features
       showCalculator, showReviewScreen, showQuestionAnalysis, showResultsToStudents, requirePhotoCapture, photoCaptureInterval,
       enableWebcam, enableMicrophone, instructions, rules,
@@ -286,6 +289,9 @@ router.put('/exams/:id', authenticateToken, requireAnyAdminPermission, checkPerm
     if (startDate) exam.startDate = startDate;
     if (endDate) exam.endDate = endDate;
     if (allowedAttempts) exam.allowedAttempts = allowedAttempts;
+    if (questionsToDisplay !== undefined) {
+      exam.questionsToDisplay = questionsToDisplay === '' || questionsToDisplay === null ? null : questionsToDisplay;
+    }
 
     // Advanced features
     if (showCalculator !== undefined) exam.showCalculator = showCalculator;
@@ -838,8 +844,9 @@ router.put('/users/:id', authenticateToken, requireAnyAdminPermission, checkPerm
       user.email = email;
     }
     if (password) {
-      const bcrypt = require('bcryptjs');
-      user.password = await bcrypt.hash(password, 10);
+      // Plaintext assignment is intentional — the User model's pre('save')
+      // hook hashes it; hashing here too would double-hash and break login.
+      user.password = password;
     }
     if (role && ['student', 'admin'].includes(role)) {
       user.role = role;
@@ -1030,10 +1037,11 @@ router.put('/students/:id', authenticateToken, requireAnyAdminPermission, checkP
     if (studentId !== undefined) student.studentId = studentId;
     if (batch !== undefined) student.batch = batch;
 
-    // Only update password if provided
+    // Only update password if provided. Plaintext assignment is intentional
+    // — the User model's pre('save') hook hashes it; hashing here too would
+    // double-hash and break login.
     if (password) {
-      const bcrypt = require('bcryptjs');
-      student.password = await bcrypt.hash(password, 10);
+      student.password = password;
     }
 
     await student.save();

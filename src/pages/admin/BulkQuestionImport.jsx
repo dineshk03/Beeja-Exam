@@ -4,6 +4,47 @@ import { ArrowLeft, Upload, FileText, Download, Plus, Trash2, Save } from 'lucid
 import api from '../../api/axios';
 import AdminLayout from '../../components/admin/AdminLayout';
 
+// Mirrors server/models/Question.js field requirements per type, so bad
+// shapes (e.g. a match-following question sent with a plain "correctAnswer"
+// string instead of leftItems/rightItems/correctMatches) get caught here
+// with a readable reason instead of surfacing as a raw Mongoose CastError.
+const validateQuestion = (q) => {
+  if (!q.type) return 'Missing "type"';
+  if (!q.question || !q.question.trim()) return 'Missing question text';
+
+  switch (q.type) {
+    case 'multiple-choice':
+    case 'single-choice':
+      if (!Array.isArray(q.options) || q.options.length < 2) return 'Needs at least 2 options';
+      if (typeof q.correctAnswer !== 'number' || Number.isNaN(q.correctAnswer)) return 'correctAnswer must be a number (option index)';
+      return null;
+    case 'multiple-answer':
+      if (!Array.isArray(q.options) || q.options.length < 2) return 'Needs at least 2 options';
+      if (!Array.isArray(q.correctAnswerIndices) || q.correctAnswerIndices.some(n => typeof n !== 'number' || Number.isNaN(n))) {
+        return 'correctAnswerIndices must be an array of option-index numbers';
+      }
+      return null;
+    case 'short-answer':
+      if (!Array.isArray(q.correctAnswers) || q.correctAnswers.length === 0) return 'correctAnswers must be a non-empty array of accepted answer strings';
+      return null;
+    case 'match-following':
+      if (!Array.isArray(q.leftItems) || !Array.isArray(q.rightItems)) return 'Needs leftItems and rightItems arrays (not correctAnswer)';
+      if (!q.correctMatches || typeof q.correctMatches !== 'object') return 'Needs a correctMatches map (leftIndex -> rightIndex), not a "1-b,2-a" string';
+      return null;
+    case 'code-test':
+      if (!Array.isArray(q.testCases) || q.testCases.length === 0) return 'Needs a testCases array';
+      return null;
+    case 'hotspot':
+      if (!Array.isArray(q.hotspots) || q.hotspots.length === 0) return 'Needs a hotspots array';
+      return null;
+    case 'drag-drop':
+      if (!Array.isArray(q.draggableItems) || !Array.isArray(q.dropZones)) return 'Needs draggableItems and dropZones arrays';
+      return null;
+    default:
+      return `Unknown question type "${q.type}"`;
+  }
+};
+
 function BulkQuestionImport() {
   const navigate = useNavigate();
   const [importMethod, setImportMethod] = useState('form'); // 'form', 'csv', 'json'
@@ -89,72 +130,166 @@ function BulkQuestionImport() {
     setImporting(true);
     try {
       let questionsToImport = [];
+      let skippedRows = [];
 
       if (importMethod === 'form') {
         questionsToImport = questions.filter(q => q.question.trim() !== '');
       } else if (importMethod === 'csv') {
-        questionsToImport = parseCSV(csvData);
+        const parsed = parseCSV(csvData);
+        questionsToImport = parsed.questions;
+        skippedRows = parsed.skipped;
       } else if (importMethod === 'json') {
         questionsToImport = JSON.parse(jsonData);
       }
 
+      // Validate every question's shape against the schema up front, so
+      // mismatched fields (e.g. a match-following question sent with
+      // correctAnswer: "1-b,2-a" instead of correctMatches) are reported
+      // clearly instead of reaching the server as a raw CastError.
+      const validQuestions = [];
+      questionsToImport.forEach((q, i) => {
+        const reason = validateQuestion(q);
+        if (reason) {
+          skippedRows.push({ row: i + 1, reason: `"${(q.question || '(no question text)').slice(0, 60)}" — ${reason}` });
+        } else {
+          validQuestions.push(q);
+        }
+      });
+      questionsToImport = validQuestions;
+
       if (questionsToImport.length === 0) {
-        alert('No valid questions to import');
+        alert(skippedRows.length > 0
+          ? `No valid questions to import. Skipped rows:\n${skippedRows.map(s => `Row ${s.row}: ${s.reason}`).join('\n')}`
+          : 'No valid questions to import');
         return;
       }
 
-      // Import all questions
-      const responses = await Promise.all(
+      // Import each question independently so one bad row doesn't hide the
+      // results of the others (they've already been written to the DB by
+      // the time any single request fails).
+      const results = await Promise.allSettled(
         questionsToImport.map(q => api.post('/admin/questions', q))
       );
 
-      const createdQuestionIds = responses.map(res => res.data._id);
+      const createdQuestionIds = [];
+      const failures = [];
+      results.forEach((result, i) => {
+        if (result.status === 'fulfilled') {
+          createdQuestionIds.push(result.value.data._id);
+        } else {
+          const reason = result.reason?.response?.data?.error || result.reason?.message || 'Unknown error';
+          failures.push(`"${questionsToImport[i].question.slice(0, 60)}": ${reason}`);
+        }
+      });
 
-      // If exam selected, assign all questions to exam using bulk endpoint
-      if (selectedExam) {
+      if (selectedExam && createdQuestionIds.length > 0) {
         await api.post(`/admin/exams/${selectedExam}/questions/bulk`, {
           questionIds: createdQuestionIds
         });
-        alert(`Successfully imported ${questionsToImport.length} questions and assigned to exam!`);
-      } else {
-        alert(`Successfully imported ${questionsToImport.length} questions!`);
       }
-      
-      navigate('/admin/questions');
+
+      const summary = [
+        `Imported ${createdQuestionIds.length} of ${questionsToImport.length} questions.`,
+        skippedRows.length > 0 && `Skipped ${skippedRows.length} row(s) before import:\n${skippedRows.map(s => `Row ${s.row}: ${s.reason}`).join('\n')}`,
+        failures.length > 0 && `Failed ${failures.length} question(s):\n${failures.join('\n')}`
+      ].filter(Boolean).join('\n\n');
+
+      alert(summary);
+
+      if (createdQuestionIds.length > 0) {
+        navigate('/admin/questions');
+      }
     } catch (error) {
       console.error('Failed to import questions:', error);
-      alert('Failed to import some questions. Please check the format.');
+      alert('Failed to import questions. Please check the format.');
     } finally {
       setImporting(false);
     }
   };
 
-  const parseCSV = (csv) => {
-    const lines = csv.trim().split('\n');
-    const questions = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      const parts = lines[i].split(',');
-      if (parts.length >= 7) {
-        questions.push({
-          type: parts[0].trim(),
-          question: parts[1].trim(),
-          options: parts[2].split('|').map(o => o.trim()),
-          correctAnswer: parseInt(parts[3]),
-          category: parts[4].trim(),
-          points: parseInt(parts[5]),
-          difficulty: parts[6].trim()
-        });
+  const parseCSVLine = (line) => {
+    const fields = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (inQuotes) {
+        if (char === '"' && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = false;
+        } else {
+          current += char;
+        }
+      } else if (char === '"') {
+        inQuotes = true;
+      } else if (char === ',') {
+        fields.push(current);
+        current = '';
+      } else {
+        current += char;
       }
     }
-    return questions;
+    fields.push(current);
+    return fields;
+  };
+
+  // CSV's flat columns can only represent these types unambiguously;
+  // match-following/code-test/hotspot need structured fields (rightItems,
+  // dropZones, hotspots, ...) that don't fit a single "answer" column.
+  const CSV_SUPPORTED_TYPES = ['multiple-choice', 'single-choice', 'multiple-answer', 'short-answer'];
+
+  const parseCSV = (csv) => {
+    const lines = csv.trim().split('\n').filter(line => line.trim() !== '');
+    const questions = [];
+    const skipped = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const parts = parseCSVLine(lines[i]);
+      if (parts.length < 7) {
+        skipped.push({ row: i + 1, reason: 'Fewer than 7 columns' });
+        continue;
+      }
+
+      const type = parts[0].trim();
+      if (!CSV_SUPPORTED_TYPES.includes(type)) {
+        skipped.push({ row: i + 1, reason: `"${type}" isn't supported via CSV — use JSON import instead` });
+        continue;
+      }
+
+      const points = parseInt(parts[5].trim(), 10);
+      const base = {
+        type,
+        question: parts[1].trim(),
+        category: parts[4].trim(),
+        points: Number.isNaN(points) ? 1 : points,
+        difficulty: parts[6].trim()
+      };
+
+      if (type === 'multiple-choice' || type === 'single-choice') {
+        base.options = parts[2].split('|').map(o => o.trim());
+        base.correctAnswer = parseInt(parts[3].trim(), 10);
+      } else if (type === 'multiple-answer') {
+        base.options = parts[2].split('|').map(o => o.trim());
+        base.correctAnswerIndices = parts[3].split('|').map(s => parseInt(s.trim(), 10));
+      } else if (type === 'short-answer') {
+        base.correctAnswers = parts[3].split('|').map(s => s.trim());
+      }
+
+      questions.push(base);
+    }
+    return { questions, skipped };
   };
 
   const downloadTemplate = (format) => {
     if (format === 'csv') {
-      const csv = `type,question,options,correctAnswer,category,points,difficulty
+      const csv = `type,question,options,answer,category,points,difficulty
 multiple-choice,What is 2+2?,1|2|3|4,3,Math,5,easy
-single-choice,Is the sky blue?,Yes|No,0,General,5,easy`;
+single-choice,Is the sky blue?,Yes|No,0,General,5,easy
+multiple-answer,Which are prime numbers?,2|3|4|5,0|1|3,Math,5,medium
+short-answer,What is the capital of France?,,Paris|paris,General,5,easy`;
       
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
@@ -402,9 +537,16 @@ single-choice,Is the sky blue?,Yes|No,0,General,5,easy`;
               CSV Format Example
             </label>
             <div className="bg-gray-50 p-4 rounded-lg text-sm font-mono overflow-x-auto">
-              type,question,options,correctAnswer,category,points,difficulty<br/>
-              multiple-choice,What is 2+2?,1|2|3|4,3,Math,5,easy
+              type,question,options,answer,category,points,difficulty<br/>
+              multiple-choice,What is 2+2?,1|2|3|4,3,Math,5,easy<br/>
+              multiple-answer,Which are prime numbers?,2|3|4|5,0|1|3,Math,5,medium<br/>
+              short-answer,What is the capital of France?,,Paris|paris,General,5,easy
             </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Supports multiple-choice, single-choice, multiple-answer, and short-answer only.
+              For match-following, code-test, and hotspot questions (which need extra structured fields), use JSON import instead.
+              Wrap any field containing a comma in double quotes.
+            </p>
           </div>
 
           {/* File Upload */}

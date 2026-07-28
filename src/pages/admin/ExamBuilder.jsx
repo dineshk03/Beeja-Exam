@@ -68,7 +68,7 @@ function ExamBuilder() {
       fetchData();
     } catch (error) {
       console.error('Failed to add question:', error);
-      alert('Failed to add question');
+      showNotification(error.response?.data?.error || 'Failed to add question', 'error');
     }
   };
 

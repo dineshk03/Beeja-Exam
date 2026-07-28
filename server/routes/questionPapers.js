@@ -131,9 +131,10 @@ router.delete('/question-papers/:id', authenticateToken, requireAdmin, async (re
       return res.status(404).json({ error: 'Question paper not found' });
     }
     
-    // Remove from exam's question papers array
+    // Remove from exam's question papers array (both the full list and
+    // whichever subset is currently toggled "selected" for delivery)
     await Exam.findByIdAndUpdate(questionPaper.exam, {
-      $pull: { questionPapers: questionPaper._id }
+      $pull: { questionPapers: questionPaper._id, selectedQuestionPapers: questionPaper._id }
     });
     
     await questionPaper.deleteOne();

@@ -187,7 +187,7 @@ function ExamLobby() {
             </div>
             <div className="bg-green-50 p-4 rounded-lg text-center">
               <BookOpen className="w-8 h-8 text-green-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-900">{exam.questions.length}</div>
+              <div className="text-2xl font-bold text-gray-900">{exam.totalQuestions ?? exam.questions.length}</div>
               <div className="text-sm text-gray-600">Questions</div>
             </div>
             <div className="bg-purple-50 p-4 rounded-lg text-center">

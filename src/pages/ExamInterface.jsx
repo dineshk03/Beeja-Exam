@@ -337,8 +337,15 @@ function ExamInterface() {
           currentIndex={currentQuestionIndex}
           answers={answers}
           flaggedQuestions={flaggedQuestions}
-          onQuestionSelect={setCurrentQuestionIndex}
+          onSelect={(index) => {
+            setCurrentQuestionIndex(index);
+            setShowNavigator(false);
+          }}
           onClose={() => setShowNavigator(false)}
+          onSubmit={() => {
+            setShowNavigator(false);
+            setShowSubmitModal(true);
+          }}
         />
       )}
 

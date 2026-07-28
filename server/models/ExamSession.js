@@ -10,6 +10,10 @@ const examSessionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'QuestionPaper'
   },
+  questionPapers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'QuestionPaper'
+  }],
   student: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

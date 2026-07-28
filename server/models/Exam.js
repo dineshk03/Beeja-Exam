@@ -66,7 +66,15 @@ const examSchema = new mongoose.Schema({
     default: 2,
     min: 1
   },
-  
+  // Cap on how many questions are randomly drawn from the combined pool of
+  // selected Question Papers for each student. Leave unset/null to give
+  // every student all combined questions.
+  questionsToDisplay: {
+    type: Number,
+    min: 1,
+    default: null
+  },
+
   // Proctoring Settings
   requireWebcam: {
     type: Boolean,

@@ -62,13 +62,14 @@ function QuestionNavigator({
   };
 
   questions.forEach(q => {
-    const status = questionStatus[q._id] || 'not-visited';
     const hasAnswer = answers[q._id] !== undefined;
     const isFlagged = flaggedQuestions.includes(q._id);
+    // questionStatus is only reliable when the caller actually tracks
+    // per-question visits (visitQuestion); some exam screens never call
+    // it, so fall back to the answer/flag state, which is always accurate.
+    const visited = questionStatus[q._id] !== undefined || hasAnswer || isFlagged;
 
-    if (status === 'not-visited') {
-      stats.notVisited++;
-    } else if (hasAnswer && isFlagged) {
+    if (hasAnswer && isFlagged) {
       stats.answered++;
       stats.marked++;
     } else if (hasAnswer) {
@@ -76,8 +77,10 @@ function QuestionNavigator({
     } else if (isFlagged) {
       stats.marked++;
       stats.notAnswered++;
-    } else {
+    } else if (visited) {
       stats.notAnswered++;
+    } else {
+      stats.notVisited++;
     }
   });
 

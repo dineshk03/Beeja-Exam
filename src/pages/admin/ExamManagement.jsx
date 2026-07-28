@@ -946,6 +946,7 @@ function EditExamModal({ exam, onClose, onSuccess }) {
     passingScore: exam.passingScore,
     category: exam.category || '',
     allowedAttempts: exam.allowedAttempts || 1,
+    questionsToDisplay: exam.questionsToDisplay || '',
     negativeMarking: {
       enabled: exam.negativeMarking?.enabled || false,
       deductionValue: exam.negativeMarking?.deductionValue ?? 0.25,
@@ -1082,6 +1083,23 @@ function EditExamModal({ exam, onClose, onSuccess }) {
               required
             />
             <p className="text-xs text-gray-500 mt-1">Number of times a student can attempt this exam</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Number of Questions to Display
+            </label>
+            <input
+              type="number"
+              value={formData.questionsToDisplay}
+              onChange={(e) => setFormData({ ...formData, questionsToDisplay: e.target.value === '' ? '' : parseInt(e.target.value) })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              min="1"
+              placeholder="Leave blank to use all combined questions"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Randomly picks this many questions from the combined pool of all selected Question Papers for each student. Leave blank to give every student all combined questions.
+            </p>
           </div>
 
           {/* Negative Marking */}
@@ -1349,6 +1367,7 @@ function CreateExamModal({ onClose, onSuccess }) {
     passingScore: 70,
     category: '',
     allowedAttempts: 3,
+    questionsToDisplay: '',
     negativeMarking: { enabled: false, deductionValue: 0.25 },
     // Advanced Features
     showCalculator: false,
@@ -1486,6 +1505,23 @@ function CreateExamModal({ onClose, onSuccess }) {
               required
             />
             <p className="text-xs text-gray-500 mt-1">Number of times a student can attempt this exam</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Number of Questions to Display
+            </label>
+            <input
+              type="number"
+              value={formData.questionsToDisplay}
+              onChange={(e) => setFormData({ ...formData, questionsToDisplay: e.target.value === '' ? '' : parseInt(e.target.value) })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              min="1"
+              placeholder="Leave blank to use all combined questions"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Randomly picks this many questions from the combined pool of all selected Question Papers for each student. Leave blank to give every student all combined questions.
+            </p>
           </div>
 
           {/* Negative Marking */}

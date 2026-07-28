@@ -199,10 +199,39 @@ const QuestionPapers = () => {
     }));
   };
 
-  const filteredQuestions = allQuestions.filter(q =>
-    q.text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    q.type?.toLowerCase().includes(searchTerm.toLowerCase())
+  // Questions already assigned to a *different* question paper in this exam
+  // shouldn't be pickable here (a question can only belong to one QP at a
+  // time). Questions already in the QP currently being edited stay visible.
+  const questionIdsUsedByOtherQPs = new Set(
+    questionPapers
+      .filter(qp => !editingQP || qp._id !== editingQP._id)
+      .flatMap(qp => qp.questions.map(q => q._id || q))
   );
+
+  const filteredQuestions = allQuestions.filter(q => {
+    if (questionIdsUsedByOtherQPs.has(q._id) && !formData.questions.includes(q._id)) {
+      return false;
+    }
+    return (
+      q.question?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      q.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      q.type?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
+  const allFilteredSelected = filteredQuestions.length > 0 &&
+    filteredQuestions.every(q => formData.questions.includes(q._id));
+
+  const toggleSelectAllFiltered = () => {
+    setFormData(prev => {
+      const filteredIds = filteredQuestions.map(q => q._id);
+      if (allFilteredSelected) {
+        const filteredIdSet = new Set(filteredIds);
+        return { ...prev, questions: prev.questions.filter(id => !filteredIdSet.has(id)) };
+      }
+      return { ...prev, questions: Array.from(new Set([...prev.questions, ...filteredIds])) };
+    });
+  };
 
   const calculateTotalMarks = () => {
     return formData.questions.reduce((sum, qId) => {
@@ -577,6 +606,24 @@ const QuestionPapers = () => {
                         />
                       </div>
                     </div>
+                    {filteredQuestions.length > 0 && (
+                      <div className="flex items-center justify-between mb-2 px-1">
+                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={allFilteredSelected}
+                            onChange={toggleSelectAllFiltered}
+                            className="w-4 h-4"
+                          />
+                          {allFilteredSelected ? 'Deselect all' : `Select all (${filteredQuestions.length})`}
+                        </label>
+                        {questionIdsUsedByOtherQPs.size > 0 && (
+                          <span className="text-xs text-gray-400">
+                            Questions already used in another question paper are hidden
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <div className="border border-gray-300 rounded-lg max-h-96 overflow-y-auto">
                       {filteredQuestions.length === 0 ? (
                         <div className="p-8 text-center text-gray-500">
@@ -600,16 +647,25 @@ const QuestionPapers = () => {
                                 onChange={() => {}}
                                 className="mt-1"
                               />
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900 line-clamp-2">{question.text}</p>
-                                <div className="flex items-center space-x-4 mt-2">
-                                  <span className="text-xs px-2 py-1 bg-gray-200 rounded-full text-gray-700 capitalize">
-                                    {question.type}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-gray-900">{question.question || '(No question text)'}</p>
+                                <div className="flex items-center flex-wrap gap-2 mt-2">
+                                  <span className="text-xs px-2 py-1 bg-blue-100 rounded-full text-blue-700 font-medium capitalize">
+                                    {question.type?.replace(/-/g, ' ')}
                                   </span>
-                                  <span className="text-xs text-gray-600">
+                                  {question.category && (
+                                    <span className="text-xs px-2 py-1 bg-purple-100 rounded-full text-purple-700 font-medium">
+                                      {question.category}
+                                    </span>
+                                  )}
+                                  <span className="text-xs px-2 py-1 bg-amber-100 rounded-full text-amber-700 font-medium">
                                     {question.points || 1} {question.points === 1 ? 'mark' : 'marks'}
                                   </span>
-                                  <span className="text-xs text-gray-600 capitalize">
+                                  <span className={`text-xs px-2 py-1 rounded-full font-medium capitalize ${
+                                    question.difficulty === 'hard' ? 'bg-red-100 text-red-700' :
+                                    question.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
+                                    'bg-gray-200 text-gray-700'
+                                  }`}>
                                     {question.difficulty || 'medium'}
                                   </span>
                                 </div>

@@ -196,9 +196,12 @@ router.get('/', authenticateToken, async (req, res) => {
           if (fullExam.selectedQuestionPapers && fullExam.selectedQuestionPapers.length >= (fullExam.minimumQPRequired || 2)) {
             // Calculate total questions from all selected QPs (sum of all QPs)
             const qpQuestionCounts = fullExam.selectedQuestionPapers.map(qp => qp.questions?.length || 0);
-            totalQuestions = qpQuestionCounts.reduce((sum, count) => sum + count, 0);
+            const combinedTotal = qpQuestionCounts.reduce((sum, count) => sum + count, 0);
+            totalQuestions = fullExam.questionsToDisplay
+              ? Math.min(fullExam.questionsToDisplay, combinedTotal)
+              : combinedTotal;
 
-            console.log(`   📊 QP Question Counts: [${qpQuestionCounts.join(', ')}] = Total: ${totalQuestions}`);
+            console.log(`   📊 QP Question Counts: [${qpQuestionCounts.join(', ')}] = Combined: ${combinedTotal}, Displayed: ${totalQuestions}`);
           }
         } else {
           // Legacy: direct question assignment (should be migrated)
@@ -246,8 +249,46 @@ router.get('/:id', authenticateToken, async (req, res) => {
       }
     }
 
+    // exam.questions (legacy direct-assignment field) must never be served
+    // once useQuestionPapers is on — it can hold a totally different/larger
+    // set than the QP system. Prefer, in order:
+    //   1. An active session's questionOrder (the exact set locked in at
+    //      /start time), so the student always sees the same questions.
+    //   2. Otherwise (pre-start preview), a fresh combined pool from all
+    //      valid selected QPs, capped/sampled by questionsToDisplay — just
+    //      for an accurate preview count; /start will draw its own sample.
+    let questionsForClient = exam.questions;
+    if (exam.useQuestionPapers) {
+      const activeSession = await ExamSession.findOne({
+        exam: req.params.id,
+        student: req.user.id,
+        status: 'in-progress',
+      }).lean();
+
+      if (activeSession?.questionOrder?.length > 0) {
+        const sessionQuestions = await Question.find({
+          _id: { $in: activeSession.questionOrder }
+        }).lean();
+        const byId = new Map(sessionQuestions.map(q => [q._id.toString(), q]));
+        questionsForClient = activeSession.questionOrder
+          .map(id => byId.get(id.toString()))
+          .filter(Boolean);
+      } else if (exam.selectedQuestionPapers?.length > 0) {
+        const qps = await QuestionPaper.find({
+          _id: { $in: exam.selectedQuestionPapers }
+        }).populate('questions').lean();
+        const validQPs = qps.filter(qp => qp.questions?.length > 0);
+        const combined = validQPs.flatMap(qp => qp.questions);
+        questionsForClient = exam.questionsToDisplay && exam.questionsToDisplay < combined.length
+          ? combined.slice(0, exam.questionsToDisplay)
+          : combined;
+      } else {
+        questionsForClient = [];
+      }
+    }
+
     // Remove correct answers from questions
-    const sanitizedQuestions = exam.questions.map(q => {
+    const sanitizedQuestions = questionsForClient.map(q => {
       const { correctAnswer, correctAnswerIndices, correctAnswers, correctMatches, ...rest } = q;
       return rest;
     });
@@ -263,6 +304,10 @@ router.get('/:id', authenticateToken, async (req, res) => {
     // Check if exam requires Question Papers but doesn't have enough
     const requiresQPSetup = exam.useQuestionPapers &&
       (!exam.selectedQuestionPapers || exam.selectedQuestionPapers.length < (exam.minimumQPRequired || 2));
+
+    // questionsForClient is already the correct, QP-aware set computed
+    // above, so its length is the real count in every case.
+    const computedTotalQuestions = questionsForClient.length;
 
     // Get current schedule's proctoring settings if available
     let proctorSettings = null;
@@ -296,7 +341,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     res.json({
       ...exam,
       questions: sanitizedQuestions,
-      totalQuestions: exam.questions.length,
+      totalQuestions: computedTotalQuestions,
       requiresQPSetup,
       qpStatus: {
         useQuestionPapers: exam.useQuestionPapers,
@@ -536,30 +581,55 @@ router.post('/:id/start', authenticateToken, async (req, res) => {
       });
     }
 
-    // Randomly select a Question Paper for this student
-    const randomIndex = Math.floor(Math.random() * exam.selectedQuestionPapers.length);
-    const selectedQPId = exam.selectedQuestionPapers[randomIndex];
+    // Combine questions from every selected Question Paper into one pool.
+    // exam.selectedQuestionPapers can contain stale references to QPs that
+    // were since deleted (or ended up with zero questions) — filter those
+    // out rather than hard-failing, and only block if too few valid QPs
+    // remain to meet minimumQPRequired.
+    const foundQPs = await QuestionPaper.find({
+      _id: { $in: exam.selectedQuestionPapers }
+    }).populate('questions');
 
-    // Populate the selected Question Paper with questions
-    const selectedQP = await QuestionPaper.findById(selectedQPId).populate('questions');
+    const selectedQPs = foundQPs.filter(qp => qp.questions && qp.questions.length > 0);
 
-    if (!selectedQP || !selectedQP.questions || selectedQP.questions.length === 0) {
-      console.log('❌ Selected Question Paper has no questions:', {
-        selectedQPId,
-        hasQP: !!selectedQP,
-        questionCount: selectedQP?.questions?.length || 0
-      });
-      return res.status(400).json({
-        error: 'Question Paper configuration error',
-        message: 'The selected Question Paper has no questions. Please contact administrator.'
+    if (selectedQPs.length !== exam.selectedQuestionPapers.length) {
+      const validIds = new Set(foundQPs.map(qp => qp._id.toString()));
+      const missingIds = exam.selectedQuestionPapers.filter(id => !validIds.has(id.toString()));
+      console.warn('⚠️ Exam has stale/empty Question Paper references, skipping them:', {
+        examId: exam._id.toString(),
+        missingIds: missingIds.map(id => id.toString()),
+        emptyQPs: foundQPs.filter(qp => !qp.questions || qp.questions.length === 0).map(qp => qp.code)
       });
     }
 
-    // Use questions from the selected Question Paper
-    let questionsToUse = selectedQP.questions;
+    if (selectedQPs.length < exam.minimumQPRequired) {
+      return res.status(400).json({
+        error: 'Question Paper configuration error',
+        message: `This exam requires at least ${exam.minimumQPRequired} Question Paper(s) with questions, but only ${selectedQPs.length} valid one(s) are available. Please contact administrator.`
+      });
+    }
+
+    // Shuffle function using Fisher-Yates algorithm
+    const shuffleArray = (array) => {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    };
+
+    // Use combined questions from all selected Question Papers
+    let questionsToUse = selectedQPs.flatMap(qp => qp.questions);
     let duration = exam.duration; // Always use exam's duration, not QP duration
 
-    console.log(`Randomly Selected Question Paper: ${selectedQP.code} - ${selectedQP.name} (from ${exam.selectedQuestionPapers.length} selected QPs)`);
+    console.log(`Combined ${questionsToUse.length} questions from ${selectedQPs.length} selected QPs: ${selectedQPs.map(qp => qp.code).join(', ')}`);
+
+    // Cap to a random subset if the exam limits how many questions to show
+    if (exam.questionsToDisplay && exam.questionsToDisplay < questionsToUse.length) {
+      questionsToUse = shuffleArray(questionsToUse).slice(0, exam.questionsToDisplay);
+      console.log(`Capped to ${questionsToUse.length} questions (questionsToDisplay = ${exam.questionsToDisplay})`);
+    }
 
     // Create new session
     const startTime = new Date();
@@ -567,7 +637,7 @@ router.post('/:id/start', authenticateToken, async (req, res) => {
 
     const session = new ExamSession({
       exam: req.params.id,
-      questionPaper: selectedQP?._id,
+      questionPapers: selectedQPs.map(qp => qp._id),
       student: req.user.id,
       startTime,
       endTime,
@@ -581,18 +651,8 @@ router.post('/:id/start', authenticateToken, async (req, res) => {
     await session.save();
     await logActivity(req.user.id, 'exam_start', 'exam', exam._id, {
       title: exam.title,
-      questionPaper: selectedQP ? selectedQP.code : 'default'
+      questionPapers: selectedQPs.map(qp => qp.code).join(', ')
     }, req);
-
-    // Shuffle function using Fisher-Yates algorithm
-    const shuffleArray = (array) => {
-      const shuffled = [...array];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      return shuffled;
-    };
 
     // Randomize questions order
     const randomizedQuestions = shuffleArray(questionsToUse);
